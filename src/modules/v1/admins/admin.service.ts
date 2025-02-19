@@ -1,9 +1,4 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 
@@ -88,7 +83,8 @@ export class AdminService {
         throw new HttpException(
           {
             status: 'error',
-            message: 'Superadmin can only update password using user_id OR Old password required to update password',
+            message:
+              'Superadmin can only update password using user_id OR Old password required to update password',
           },
           HttpStatus.BAD_REQUEST,
         );
@@ -100,7 +96,7 @@ export class AdminService {
         throw new HttpException(
           {
             status: 'error',
-            message: 'Old password required to update password'
+            message: 'Old password required to update password',
           },
           HttpStatus.BAD_REQUEST,
         );

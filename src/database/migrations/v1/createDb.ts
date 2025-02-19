@@ -11,7 +11,10 @@ const db = Knex(knexConfig);
 
     await db.schema.createTable('Admins', function (table) {
       table.increments('id').primary();
-      table.string('name').notNullable().defaultTo(db.raw("CONCAT('User_', ?)", [db.fn.now()]));
+      table
+        .string('name')
+        .notNullable()
+        .defaultTo(db.raw("CONCAT('User_', ?)", [db.fn.now()]));
       table.string('username').notNullable().unique();
       table.string('email').notNullable().unique();
       table.string('password').notNullable();
@@ -30,10 +33,17 @@ const db = Knex(knexConfig);
       createdAt: db.fn.now(),
     });
 
-    // await db.schema.createTable('categories', function (table) {
-    //     table.increments('id').primary();
-    //     table.string('name').notNullable();
-    // });
+    await db.schema.dropTableIfExists('Servers');
+
+    await db.schema.createTable('Servers', function (table) {
+      table.increments('id').primary();
+      table.string('ip').notNullable();
+      table.string('port').notNullable();
+      table.string('username').notNullable();
+      table.string('auth_type').notNullable();
+      table.string('password').notNullable();
+      table.string('private_key').notNullable();
+    });
 
     // await db.schema.createTable('products', function (table) {
     //     table.increments('id').primary();

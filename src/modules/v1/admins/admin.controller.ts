@@ -38,14 +38,24 @@ import { Roles } from 'src/comman/decorators/roles.decorator';
 
 @Controller('api/auth')
 export class AdminController {
-  constructor(private adminService: AdminService) { }
+  constructor(private adminService: AdminService) {}
 
   @Post('register')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a new admin by superadmin' })
   @ApiBearerAuth()
-  @ApiBody({ type: CreateAdminDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        username: { default: 'new_admin', type: 'string', description: 'new admin username' },
+        email: { default: 'admin@gmail.com', type: 'string', description: 'new admin email'},
+        password: { default: 'New_admin_pass_123', type: 'string', description: 'new admin password' },
+      },
+      required: ['username', 'password'],
+    },
+  })
   // @ApiResponse({ status: 201, description: 'The user has been successfully created.' })
   async createAdmin(@Body() newAdmin: CreateAdminDto): Promise<IMessage> {
     try {
@@ -60,7 +70,16 @@ export class AdminController {
 
   @Post('login')
   @ApiOperation({ summary: 'Create a new user' })
-  @ApiBody({ type: LoginAdminDto })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        username: { default: 'superadmin', type: 'string', description: 'admin username' },
+        password: { default: 'superadmin', type: 'string', description: 'admin password' },
+      },
+      required: ['username', 'password'],
+    },
+  })
   // @ApiResponse({ status: 201, description: 'The user has been successfully logined.' })
   async loginAdmin(@Body() loginAdminDto: LoginAdminDto): Promise<IMessageforLogin> {
     try {
@@ -88,16 +107,20 @@ export class AdminController {
         {
           type: 'object',
           properties: {
-            user_id: { type: 'string', description: 'Faqat superadmin uchun - o\'zgartirilayotgan adminning IDsi' },
-            new_password: { type: 'string', description: 'Yangi parol' },
+            user_id: {
+              default: 'admin_id',
+              type: 'string',
+              description: "Faqat superadmin uchun - o'zgartirilayotgan adminning IDsi",
+            },
+            new_password: { default: 'new_password_123', type: 'string', description: 'Yangi parol' },
           },
           required: ['user_id', 'new_password'],
         },
         {
           type: 'object',
           properties: {
-            old_password: { type: 'string', description: 'Joriy parol (faqat admin uchun)' },
-            new_password: { type: 'string', description: 'Yangi parol' },
+            old_password: { default: "old_password", type: 'string', description: 'Joriy parol (faqat admin uchun)' },
+            new_password: { default: "new_password", type: 'string', description: 'Yangi parol' },
           },
           required: ['old_password', 'new_password'],
         },
@@ -118,8 +141,8 @@ export class AdminController {
           status: 'error',
           message: 'Parametrdagi ID va token ichidagi payload dagi ID mos emas',
         },
-        HttpStatus.BAD_REQUEST
-      )
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     return this.adminService.updatePassword({
@@ -142,11 +165,11 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-        username: { type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
-        name: { type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
-        email: { type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
+        username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
+        name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
+        email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
       },
-      required: []
+      required: [],
     },
   })
   // @ApiResponse({ status: 200, description: 'The user has been successfully updated.' })
@@ -162,7 +185,7 @@ export class AdminController {
           status: 'error',
           message: 'Parametrdagi ID va token ichidagi payload dagi ID mos emas',
         },
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
     return this.adminService.updateProfile({ id: req.user.id.toString(), updateProfileData });
@@ -177,20 +200,23 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-        refresh_token: { type: 'string', description: 'token olish uchun refresh_token' }
+        refresh_token: { default: '', type: 'string', description: 'token olish uchun refresh_token' },
       },
-      required: ['refresh_token']
+      required: ['refresh_token'],
     },
   })
-  async refreshToken(@Body() data: { refresh_token: string }, @Req() req: IGuardRequest,): Promise<ITokens> {
+  async refreshToken(
+    @Body() data: { refresh_token: string },
+    @Req() req: IGuardRequest,
+  ): Promise<ITokens> {
     try {
-      console.log("refreshtoken");
+      console.log('refreshtoken');
       return this.adminService.refreshTokens(data.refresh_token, req.user);
     } catch (err) {
       throw new HttpException(
         {
           status: 'error',
-          message: 'refresh_token orqali token olishda xatolik sodir bo\'ldi: ' + err.message,
+          message: "refresh_token orqali token olishda xatolik sodir bo'ldi: " + err.message,
         },
         HttpStatus.UNAUTHORIZED,
       );
