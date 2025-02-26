@@ -8,9 +8,18 @@ const db = Knex(knexConfig);
 (async function () {
   try {
     await db.schema.dropTableIfExists('Admins');
+    await db.schema.dropTableIfExists('admins');
 
-    await db.schema.createTable('Admins', function (table) {
-      table.increments('id').primary();
+    await db.schema.dropTableIfExists('products');
+    await db.schema.dropTableIfExists('Products');
+    
+    await db.schema.dropTableIfExists('servers');
+    await db.schema.dropTableIfExists('Servers');
+    
+    const SUPERADMIN_PASSWORD: string = await bcrypt.hash<string>('superadmin', 10);
+    
+    await db.schema.createTable('admins', function (table) {
+      table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table
         .string('name')
         .notNullable()
@@ -22,54 +31,105 @@ const db = Knex(knexConfig);
       table.timestamp('createdAt').notNullable().defaultTo(db.fn.now());
     });
 
-    const superadmin_password: string = await bcrypt.hash<string>('superadmin', 10);
-
-    await db('Admins').insert({
+    await db('admins').insert({
       name: 'superadmin',
       username: 'superadmin',
       email: 'superadmin@gmail.com',
-      password: superadmin_password,
+      password: SUPERADMIN_PASSWORD,
       role: 'superadmin',
       createdAt: db.fn.now(),
     });
 
-    await db.schema.dropTableIfExists('Servers');
-
-    await db.schema.createTable('Servers', function (table) {
-      table.increments('id').primary();
+    await db.schema.createTable('servers', function (table) {
+      table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('ip').notNullable();
       table.string('port').notNullable();
       table.string('username').notNullable();
       table.string('auth_type').notNullable();
-      table.string('password').notNullable();
-      table.string('private_key').notNullable();
+      table.string('password').nullable();
+      table.string('private_key').nullable();
+      // table.timestamp('last_checked').notNullable().defaultTo(db.fn.now());
+      table.string('passphrase').nullable();
+      table.string('tryKeyboard').nullable();
     });
 
-    // await db.schema.createTable('products', function (table) {
-    //     table.increments('id').primary();
-    //     table.string('name').notNullable();
-    //     table.integer('category_id').notNullable().references('id').inTable('categories');
-    //     table.specificType('quantity', 'text').notNullable(); // PostgreSQLda enu o'rniga text ishlatiladi
-    //     table.decimal('price', 10, 2).notNullable();
-    // });
+    await db.schema.createTable('products', function (table) {
+      table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
+      table.string('name').notNullable();
+      table.text('icon').nullable();
+      table.string('version').notNullable();
 
-    // await db.schema.createTable('warehouse', function (table) {
-    //     table.increments('id').primary();
-    //     table.integer('product_id').notNullable().references('id').inTable('products');
-    //     table.integer('amount').notNullable();
-    // });
+      // table.string('file_url').notNullable();
+      // table.text('download_path').notNullable();
 
-    // await db.schema.createTable('sales', function (table) {
-    //     table.increments('id').primary();
-    //     table.integer('product_id').notNullable().references('id').inTable('products');
-    //     table.integer('amount').notNullable();
-    //     table.timestamp('date').notNullable().defaultTo(db.fn.now());
-    // });
+      table.uuid('server_id').nullable().references('id').inTable('servers').onDelete('SET NULL');
+
+      table.integer('size').notNullable();
+      table.string('company').notNullable();
+      table.text('description').nullable();
+      table.string('support_os').notNullable();
+
+      table.integer('required_cpu_core').nullable();
+      table.integer('required_ram').nullable();
+      table.integer('required_storage').nullable();
+      table.bigInteger('required_network').nullable();
+
+      table.integer('computer_count').notNullable().defaultTo(0);
+      table.timestamp('first_upload_at').nullable().defaultTo(null);
+      table.timestamp('last_upload_at').nullable().defaultTo(null);
+    });
+
+    await db('products').insert({
+      id: db.raw('uuid_generate_v4()'),
+      name: 'DLP',
+      icon: 'icons/launchpad/dlp.png',
+      version: '1.0.0',
+      // file_url: 'https://example.com/superadmin.zip',
+      // download_path: '/downloads/superadmin.zip',
+      server_id: null,
+      size: 1200, // MB
+      company: 'Datagaze',
+      description: 'Datagaze DLP',
+      support_os: 'Windows, Linux, MacOS',
+      required_cpu_core: 2,
+      required_ram: 4096, // MB
+      required_storage: 50000, // MB
+      required_network: 100, // Mbps
+      computer_count: 0,
+      first_upload_at: null,
+      last_upload_at: null,
+    });
+
+    await db('products').insert({
+      id: db.raw('uuid_generate_v4()'),
+      name: 'WAF',
+      icon: 'icons/launchpad/waf.png',
+      version: '1.0.0',
+      // file_url: 'https://example.com/superadmin.zip',
+      // download_path: '/downloads/superadmin.zip',
+      server_id: null,
+      size: 1200, // MB
+      company: 'Datagaze',
+      description: 'Datagaze WAF',
+      support_os: 'Windows, Linux, MacOS',
+      required_cpu_core: 2,
+      required_ram: 4096, // MB
+      required_storage: 50000, // MB
+      required_network: 100, // Mbps
+      computer_count: 0,
+      first_upload_at: null,
+      last_upload_at: null,
+    });
+    
+
+    
+
 
     await db.destroy();
 
     console.log('db jadvallar yaratildi!');
   } catch (err) {
     console.log('db jadvallarni yaratishda xatolik: ', err);
+    await db.destroy();
   }
 })();

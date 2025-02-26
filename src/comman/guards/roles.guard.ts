@@ -37,7 +37,6 @@ export class RolesGuard implements CanActivate {
       const userRole: Role = decoded.role;
       const payload: IPayload = {
         id: decoded.id,
-        username: decoded.username,
         role: decoded.role,
       };
       request.user = payload;

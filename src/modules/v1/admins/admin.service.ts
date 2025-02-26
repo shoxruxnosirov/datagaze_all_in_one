@@ -15,7 +15,7 @@ import {
   UpdateAdminProfileDto,
 } from 'src/modules/v1/admins/dto/dtos';
 import { IMessage, IMessageforLogin, IPayload, ITokens } from 'src/comman/types';
-import { AdminRepository } from 'src/repositories/admin.repository';
+import { AdminRepository } from 'src/database/repositories/admin.repository';
 import { Role } from 'src/comman/guards/roles.enum';
 
 @Injectable()
@@ -41,7 +41,6 @@ export class AdminService {
       if (admin) {
         const payload: IPayload = {
           id: admin.id,
-          username: admin.username,
           role: admin.role,
         };
         return {
