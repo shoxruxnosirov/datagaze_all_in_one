@@ -155,25 +155,14 @@ export class SshConnection {
 
     const osType = await this.findOsType(conn);
 
-    // conn.sftp(async (err, sftp) => {
-    //   if (err) {
-    //     conn.end();
-    //     throw new HttpException(
-    //       {
-    //         status: 'error',
-    //         message: 'SFTP sessiyasini ochishda xatolik: ' + err.message,
-    //       },
-    //       HttpStatus.INTERNAL_SERVER_ERROR,
-    //     )
-    //   }
-
-    // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath);
-
-    // await this.uploadAndInstallNodeJS(conn, osType);
-
+    
+    await this.uploadAndInstallNodeJS(conn, osType);
+    
     const startCommand: string = 'npm run start';  //'config.startCommand'
-
+    
+    // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath);
     await this.uploadProduct(conn, config.localProjectPath, osType, startCommand);
+
     // console.log('Files uploaded successfully');
 
 
@@ -297,12 +286,11 @@ export class SshConnection {
     let remoteFile: string;
     let localFilePath: string;
     if (osType === 'Linux') {
-      remoteFile = `/home/ubuntu/node.tar.xz`;
+      remoteFile = `node.tar.xz`;
       localFilePath = path.join(process.cwd(), 'products', 'nodejs', 'node_v22.14.0_64.tar.xz');
     } else {
       remoteFile = `C:\\Users\\Administrator\\Downloads\\nodejs.zip`;
       localFilePath = path.join(process.cwd(), 'products', 'nodejs', 'node_v22.14.0_64.zip');
-
     }
 
     // Faylni serverga yuborish
@@ -353,35 +341,55 @@ export class SshConnection {
           # Node.js versiyasini tekshirish
           node -v
         `
+        // const windowsCommands = `
+        //   powershell -Command "
+        //   # C:\\nodejs katalogi mavjudligini tekshirish va yaratish
+        //   if (-Not (Test-Path 'C:\\nodejs')) {
+        //       New-Item -ItemType Directory -Path 'C:\\nodejs' | Out-Null
+        //   }
+
+        //   # Node.js zip faylini ochish (ichidagi katalog nomini aniqlash uchun avval vaqtincha joyga ochamiz)
+        //   $extractPath = 'C:\\nodejs_temp'
+        //   if (Test-Path $extractPath) {
+        //       Remove-Item -Recurse -Force $extractPath
+        //   }
+        //   New-Item -ItemType Directory -Path $extractPath | Out-Null
+        //   Expand-Archive -Path '${remoteFile}' -DestinationPath $extractPath -Force
+
+        //   # Ochilgan katalog nomini topish
+        //   $nodeDir = Get-ChildItem -Path $extractPath | Select-Object -ExpandProperty Name
+
+        //   # Agar eski Node.js katalogi mavjud bo‘lsa, uni o‘chirib tashlash
+        //   if (Test-Path 'C:\\nodejs') {
+        //       Remove-Item -Recurse -Force 'C:\\nodejs'
+        //   }
+
+        //   # Yangi katalogni to‘g‘ri joyga ko‘chirish
+        //   Move-Item -Path "$extractPath\\$nodeDir" -Destination 'C:\\nodejs'
+
+        //   # Tozalik uchun vaqtinchalik katalogni o‘chirish
+        //   Remove-Item -Recurse -Force $extractPath
+
+        //   # Avvalgi PATH qiymatini olish
+        //   $oldPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
+
+        //   # Agar PATH ichida 'C:\\nodejs\\bin' bo‘lmasa, qo‘shamiz
+        //   if ($oldPath -notlike '*C:\\nodejs\\bin*') {
+        //       $newPath = $oldPath + ';C:\\nodejs\\bin'
+        //       [System.Environment]::SetEnvironmentVariable('Path', $newPath, [System.EnvironmentVariableTarget]::Machine)
+        //   }
+
+        //   # Joriy sessiyada ham ishlashi uchun PATH ni yangilash
+        //   $env:Path += ';C:\\nodejs\\bin'
+
+        //   # Node.js versiyasini tekshirish
+        //   node -v
+        //   "
+        // `;
+
         const windowsCommands = `
-          powershell -Command "
-          # C:\\nodejs katalogi mavjudligini tekshirish va yaratish
-          if (-Not (Test-Path 'C:\\nodejs')) {
-              New-Item -ItemType Directory -Path 'C:\\nodejs' | Out-Null
-          }
-
-          # Node.js zip faylini ochish (ichidagi katalog nomini aniqlash uchun avval vaqtincha joyga ochamiz)
-          $extractPath = 'C:\\nodejs_temp'
-          if (Test-Path $extractPath) {
-              Remove-Item -Recurse -Force $extractPath
-          }
-          New-Item -ItemType Directory -Path $extractPath | Out-Null
-          Expand-Archive -Path '${remoteFile}' -DestinationPath $extractPath -Force
-
-          # Ochilgan katalog nomini topish
-          $nodeDir = Get-ChildItem -Path $extractPath | Select-Object -ExpandProperty Name
-
-          # Agar eski Node.js katalogi mavjud bo‘lsa, uni o‘chirib tashlash
-          if (Test-Path 'C:\\nodejs') {
-              Remove-Item -Recurse -Force 'C:\\nodejs'
-          }
-
-          # Yangi katalogni to‘g‘ri joyga ko‘chirish
-          Move-Item -Path "$extractPath\\$nodeDir" -Destination 'C:\\nodejs'
-
-          # Tozalik uchun vaqtinchalik katalogni o‘chirish
-          Remove-Item -Recurse -Force $extractPath
-
+          powershell -Command "Expand-Archive -Path ${remoteFile} -DestinationPath C: -Force
+          
           # Avvalgi PATH qiymatini olish
           $oldPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
 
@@ -398,6 +406,7 @@ export class SshConnection {
           node -v
           "
         `;
+
 
         // OS turiga qarab buyruqni bajarish
         conn.exec(osType === 'Linux' ? linuxCommands : windowsCommands, (err, stream) => {
@@ -444,7 +453,7 @@ export class SshConnection {
       let remoteProjectPath: string = '';
 
       if (osType === 'Linux') {
-        remoteFile = `/home/ubuntu/product.tar.xz`;
+        remoteFile = `product.tar.xz`;
         localProjectPath = path.join(localProjectPath, 'product.tar.xz');
         remoteProjectPath = '/var/www';
       } else {
@@ -499,66 +508,95 @@ export class SshConnection {
             # sudo rm -rf ~/temp_extract
   
             # pm2-5.4.3.tgz faylini npm cashga qo'shish
-            npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz
+            # npm cache add "${remoteProjectPath}/product/pm2-5.4.3.tgz" 
+            # sudo        npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz
+            # npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz
+
+            # npm config set cache ./npm-cache
   
             # pm2-5.4.3.tgz faylini global o‘rnatish
-            npm install -g "${remoteProjectPath}/product/pm2-5.4.3.tgz" --offline
+            # sudo        npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz
+            # npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz
   
             # O'rnatilganligini tekshirish
-            pm2 --version
+            # sudo pm2 --version
           
             # Loyiha PM2 orqali ishga tushiriladi (avtomatik yuklanadigan qilib sozlaymiz)
-            cd "${remoteProjectPath}/product"
+            cd ${remoteProjectPath}/product
   
             # shu yerda ishga tushurish uchun  startCommandan foydalanish mumkin
-            pm2 start npm --name my-nest-app -- run start:prod
+            # sudo       pm2 start server.js --name my-nest-app --watch 
+            # pm2 start server.js --name my-nest-app --watch
+            
+            npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz && npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz && pm2 start server.js --name my-nest-app --watch
   
-  
+            # node server.js
+
             # PM2 ni avtomatik yuklanadigan qilish
-            pm2 save
-            pm2 startup
+            # sudo        pm2 save
+            # pm2 save
+            # sudo        pm2 startup
+            # pm2 startup
           `;
 
+
+          // const windowsCommands = `
+          //   powershell -Command "
+          //   # ZIP faylni vaqtincha ochish uchun katalog yaratamiz
+          //   $tempExtractPath = 'C:\\temp_extract'
+          //   if (Test-Path $tempExtractPath) {
+          //       Remove-Item -Recurse -Force $tempExtractPath
+          //   }
+          //   New-Item -ItemType Directory -Path $tempExtractPath | Out-Null
+  
+          //   # ZIP faylni vaqtincha katalogga ochish
+          //   Expand-Archive -Path '${remoteFile}' -DestinationPath $tempExtractPath -Force
+  
+          //   # Agar remoteProjectPath mavjud bo‘lmasa, uni yaratamiz
+          //   if (-Not (Test-Path '${remoteProjectPath}')) {
+          //       New-Item -ItemType Directory -Path '${remoteProjectPath}' | Out-Null
+          //   }
+  
+          //   # Fayllarni ko‘chirish
+          //   Move-Item -Path \"$tempExtractPath\\*\" -Destination \"${remoteProjectPath}\" -Force
+  
+          //   # Vaqtinchalik katalogni tozalash
+          //   Remove-Item -Recurse -Force $tempExtractPath
+  
+          //   # pm2-5.4.3.tgz faylini global o‘rnatish
+          //   npm install -g \"${remoteProjectPath}\\pm2-5.4.3.tgz\" --offline
+  
+          //   # O'rnatilganligini tekshirish
+          //   pm2 --version
+            
+          //   # Loyiha PM2 orqali ishga tushiriladi
+          //   cd \"${remoteProjectPath}\"
+          //   pm2 start npm --name my-nest-app -- run start:prod
+  
+          //   # PM2 ni avtomatik yuklanadigan qilish
+          //   pm2 save
+          //   pm2 startup
+          // "
+          // `;
 
           const windowsCommands = `
-            powershell -Command "
-            # ZIP faylni vaqtincha ochish uchun katalog yaratamiz
-            $tempExtractPath = 'C:\\temp_extract'
-            if (Test-Path $tempExtractPath) {
-                Remove-Item -Recurse -Force $tempExtractPath
-            }
-            New-Item -ItemType Directory -Path $tempExtractPath | Out-Null
-  
-            # ZIP faylni vaqtincha katalogga ochish
-            Expand-Archive -Path '${remoteFile}' -DestinationPath $tempExtractPath -Force
-  
-            # Agar remoteProjectPath mavjud bo‘lmasa, uni yaratamiz
-            if (-Not (Test-Path '${remoteProjectPath}')) {
-                New-Item -ItemType Directory -Path '${remoteProjectPath}' | Out-Null
-            }
-  
-            # Fayllarni ko‘chirish
-            Move-Item -Path \"$tempExtractPath\\*\" -Destination \"${remoteProjectPath}\" -Force
-  
-            # Vaqtinchalik katalogni tozalash
-            Remove-Item -Recurse -Force $tempExtractPath
-  
-            # pm2-5.4.3.tgz faylini global o‘rnatish
-            npm install -g \"${remoteProjectPath}\\pm2-5.4.3.tgz\" --offline
-  
-            # O'rnatilganligini tekshirish
+
+            powershell -Command "Expand-Archive -Path ${remoteFile} -DestinationPath ${remoteProjectPath} -Force"
+
+            npm cache add ${remoteProjectPath}\\product\\pm2-5.4.3.tgz
+
+            npm install -g "${remoteProjectPath}\\product\\pm2-5.4.3.tgz" --offline
+
             pm2 --version
-            
-          ` + `
-            # Loyiha PM2 orqali ishga tushiriladi
-            cd \"${remoteProjectPath}\"
+
+            cd "${remoteProjectPath}\\product"
+
             pm2 start npm --name my-nest-app -- run start:prod
-  
-            # PM2 ni avtomatik yuklanadigan qilish
+
             pm2 save
             pm2 startup
-          "
           `;
+
 
           `
           # C:\\install_project.ps1
