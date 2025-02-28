@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { Response } from 'express';
 import { ConnectConfig } from 'ssh2';
 
 import { SshConnection } from './ssh.connection';
@@ -20,16 +21,14 @@ export class SshService {
     async storeSshCredentials(data: {connectConfig: ConnectConfig, productData: IProduct}) {
         // const connectMs: IMessage = await this.connectServer.connectToServer(data.connectConfig);
         
-        await this.connectServer.deployProject({
-            localProjectPath: data.productData.file_url,
-            // remoteProjectPath: data.productData.download_path,
-            // startCommand: 'npm run start',
-            serverCredentials: data.connectConfig
-        });
+        // await this.connectServer.deployProject({
+        //     localProjectPath: data.productData.file_url,
+        //     // remoteProjectPath: data.productData.download_path,
+        //     // startCommand: 'npm run start',
+        //     serverCredentials: data.connectConfig
+        // },);
 
         const newServer: IServer = await this.sshRepository.storeSshCredentials(data.connectConfig);
-
-
         return { server_id: newServer.id};
     }
 
@@ -38,8 +37,8 @@ export class SshService {
         // remoteProjectPath: string;
         // startCommand: string;
         serverCredentials: ConnectDto
-      }) {
-        await this.connectServer.deployProject(config);
+      }, res: Response) {
+        await this.connectServer.deployProject(config, res);
         const newServer: IServer = await this.sshRepository.storeSshCredentials(config.serverCredentials);
         return newServer;
       }

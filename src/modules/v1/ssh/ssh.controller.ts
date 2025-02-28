@@ -1,16 +1,17 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response } from 'express';
+
 
 import { ConnectConfig } from 'ssh2';
+import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 
 import { ConnectDto } from './dto/dtos';
 import { SshService } from './ssh.service';
 import { IMessage, IProduct, Role } from 'src/comman/types';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
 import { Roles } from 'src/comman/decorators/roles.decorator';
-import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
-import { createPrivateKey } from 'crypto';
 
 @Controller('ssh')
 export class SshController {
@@ -46,9 +47,14 @@ export class SshController {
       // required: ['username', 'password'],
     },
   })
-  async deployProduct(@Body() data: { localProjectPath: string, serverCredentials: ConnectDto }) {
-    return this.sshService.deployProject(data);
-  }
+
+  async deployProduct(@Body() data: { localProjectPath: string, serverCredentials: ConnectDto }, @Res() res: Response) {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    await this.sshService.deployProject(data, res);
+  } 
 
   @Get(':server_id/status')
   async checkSshStatus(@Param('server_id') serverId: string) {

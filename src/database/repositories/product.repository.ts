@@ -19,7 +19,7 @@ export class ProductRepository {
       .leftJoin('servers', 'products.server_id', 'servers.id')
       .select(
         'products.*',
-        this.knex.raw('servers.ip as server_ip')
+        this.knex.raw('servers.host as server_ip')
       );
   }
   
@@ -30,7 +30,7 @@ export class ProductRepository {
       .where('products.id', id)
       .select(
         'products.*',
-        this.knex.raw('servers.ip as server_ip')
+        this.knex.raw('servers.host as server_ip')
       )
       .first();
   }

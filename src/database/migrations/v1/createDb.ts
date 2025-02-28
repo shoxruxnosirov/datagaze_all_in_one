@@ -42,10 +42,10 @@ const db = Knex(knexConfig);
 
     await db.schema.createTable('servers', function (table) {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
-      table.string('ip').notNullable();
+      table.string('host').notNullable();
       table.string('port').notNullable();
       table.string('username').notNullable();
-      table.string('auth_type').notNullable();
+      // table.string('auth_type').notNullable();
       table.string('password').nullable();
       table.string('private_key').nullable();
       // table.timestamp('last_checked').notNullable().defaultTo(db.fn.now());
