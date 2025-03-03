@@ -1,4 +1,3 @@
-// src/products/products.service.ts
 import { Injectable } from '@nestjs/common';
 import { IProduct } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';

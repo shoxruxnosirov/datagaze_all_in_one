@@ -1,4 +1,4 @@
-import { Role } from '../../../../comman/guards/roles.enum';
+import { Role } from 'src/comman/guards/roles.enum';
 
 export class LoginAdminDto {
   username: string;

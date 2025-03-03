@@ -15,9 +15,9 @@ export class ConnectDto {
 //   ip: string;
 //   port: string;
 //   username: string;
-//   auth_type: 'password' | 'private_key'; // Union tipi bilan aniqlash
-//   password?: string; // Faqat auth_type === 'password' bo'lganda ishlatiladi
-//   private_key?: string; // Faqat auth_type === 'key' bo'lganda ishlatiladi
+//   auth_type: 'password' | 'private_key'; 
+//   password?: string; 
+//   private_key?: string; 
 // }
 
 // export type ConnectDto = Omit<IServer, 'password' | 'private_key'> & (

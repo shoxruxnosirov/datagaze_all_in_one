@@ -127,14 +127,11 @@ export class AdminController {
       ],
     },
   })
-  // @ApiResponse({ status: 200, description: 'The user has been successfully updated.' })
-  // @ApiResponse({ status: 404, description: 'User not found.' })
   async updateAdminPassword(
     @Param('id') id: string,
     @Body() updatePassData: UpdateAdminPasswordDto,
     @Req() req: IGuardRequest,
   ): Promise<IMessage> {
-    // try {
     if (req.user.id.toString() !== id) {
       throw new HttpException(
         {
@@ -150,9 +147,6 @@ export class AdminController {
       updatePassData,
       admin: req.user,
     });
-    // } catch (err) {
-    //   throw err;
-    // }
   }
 
   @Put('update-profile/:id')
@@ -172,8 +166,6 @@ export class AdminController {
       required: [],
     },
   })
-  // @ApiResponse({ status: 200, description: 'The user has been successfully updated.' })
-  // @ApiResponse({ status: 404, description: 'Admin not found.' })
   async updateAdminProfile(
     @Param('id') id: string,
     @Body() updateProfileData: UpdateAdminProfileDto,
