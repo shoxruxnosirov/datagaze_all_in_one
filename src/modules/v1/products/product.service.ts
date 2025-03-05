@@ -9,11 +9,11 @@ export class ProductsService {
   ) {}
 
   
-  async findAll(): Promise<(IProduct & {server_ip: string | null })[]> {
+  async findAll(): Promise<(IProduct & {serverHost: string | null })[]> {
     return this.procuctRepository.getAllProducts();
   }
 
-  async findOne(id: string): Promise<IProduct & {server_ip: string | null }> {
+  async findOne(id: string): Promise<IProduct & {serverHost: string | null }> {
     return this.procuctRepository.getProduct(id);
   }
 

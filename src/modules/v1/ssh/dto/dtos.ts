@@ -1,31 +1,31 @@
 import { AuthType } from "src/comman/types";
 
 export class ConnectDto {
-  // server_id: string;
+  // serverId: string;
   host: string;
   port: string;
   username: string;
-  // auth_type: AuthType;
+  // authType: AuthType;
   password?: string;
-  private_key?: string;
+  privateKey?: string;
 }
 
 // interface IServer {
-//   server_id: string;
+//   serverId: string;
 //   ip: string;
 //   port: string;
 //   username: string;
-//   auth_type: 'password' | 'private_key'; 
+//   authType: 'password' | 'privateKey'; 
 //   password?: string; 
-//   private_key?: string; 
+//   privateKey?: string; 
 // }
 
-// export type ConnectDto = Omit<IServer, 'password' | 'private_key'> & (
+// export type ConnectDto = Omit<IServer, 'password' | 'privateKey'> & (
 //   {
-//     auth_type: 'password';
+//     authType: 'password';
 //     password: string;
 //   } | {
-//     auth_type: 'private_key';
-//     private_key: string;
+//     authType: 'privateKey';
+//     privateKey: string;
 //   }
 // );

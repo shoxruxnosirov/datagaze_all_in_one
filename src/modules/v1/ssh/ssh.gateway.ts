@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto';
 import * as pty from 'node-pty';
 import { SshGatewayConnection } from './ssh.gatewayService';
 import { ConnectDto } from './dto/dtos';
+import { ProductRepository } from 'src/database/repositories/product.repository';
 
 interface Session {
     socket: Socket;
@@ -23,7 +24,10 @@ interface Session {
 export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer() server: Server;
 
-    constructor(private sshGatewayConn: SshGatewayConnection) { }
+    constructor(
+        private sshGatewayConn: SshGatewayConnection,
+        private procuctRepository: ProductRepository
+    ) { }
 
     private sessions = new Map<string, Session>();
     // private socketAndSessions = new Map<Socket, Session>();
@@ -53,12 +57,24 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('deploy_product')
     async deployingProject(
         socket: Socket,
-        config: { localProjectPath: string; serverCredentials: ConnectDto },
+        config: { productId: string; serverCredentials: ConnectDto },
     ) {
+        const product = await this.procuctRepository.getProduct(config.productId);
+
         const sessionId = randomUUID(); // Unikal ID yaratish
         const conn = new Client();
         // console.log('config: ', config);
-        await this.sshGatewayConn.deployProject(config, socket, conn, sessionId);
+        await this.sshGatewayConn.deployProject(
+            {
+                localProjectPath: product.fileUrl,
+                serverCredentials: config.serverCredentials
+            },
+            socket,
+            conn,
+            sessionId
+        );
+
+        this.procuctRepository.addServerAndUpdateProduct(config.serverCredentials, config.productId);
         this.connectShell(socket, conn, sessionId);
     }
 
@@ -118,11 +134,11 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             socket.emit('data', { sessionId, output: data.toString() });
         });
 
-        // term.onExit(({ exitCode, signal }) => {
-        //     console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
-        //     socket.emit('exit', { sessionId, exitCode, signal });
-        //     this.sessions.delete(sessionId);
-        // });
+        term.onExit(({ exitCode, signal }) => {
+            console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
+            socket.emit('exit', { sessionId, exitCode, signal });
+            this.sessions.delete(sessionId);
+        });
 
         // term.on('error', (err) => {
         //     console.error('Terminal error:', err);
@@ -160,14 +176,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
                 stream.on('close', () => {
                     // this.sessions.delete(sessionId);
-                    socket.emit('alert', { sessionId, message: 'Terminal yopildi' });
+                    socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
                     // const session: Session | undefined = this.sessions.get(sessionId);
                     // if(session) {
-                        this.connectBackEndTerm(socket, sessionId);
+                    this.connectBackEndTerm(socket, sessionId);
                     // }
                 });
 
-                socket.emit('alert', { sessionId, message: 'Terminal ochildi' });
+                socket.emit('alert', { sessionId, message: 'ssh Terminal ochildi' });
             }
         });
     }

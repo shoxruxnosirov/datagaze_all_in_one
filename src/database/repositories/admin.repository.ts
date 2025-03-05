@@ -71,19 +71,19 @@ export class AdminRepository {
   }
 
   async updatePasswordBySuperadmin(data: {
-    user_id: string;
-    new_password: string;
+    userId: string;
+    newPassword: string;
   }): Promise<IMessage> {
-    const password = await this.hashPassword(data.new_password);
-    await this.knex('admins').where({ id: data.user_id }).update({ password }).returning('*');
+    const password = await this.hashPassword(data.newPassword);
+    await this.knex('admins').where({ id: data.userId }).update({ password }).returning('*');
     return {
       status: 'success',
-      message: `Password updated successfully. new password: "${data.new_password}"`,
+      message: `Password updated successfully. new password: "${data.newPassword}"`,
     };
   }
 
   async updatePasswordByAdmin(
-    data: { old_password: string; new_password: string },
+    data: { oldPassword: string; newPassword: string },
     admin: IPayload,
   ): Promise<IMessage> {
     const existingAdmin: IAdmin = await this.knex('admins').where({ id: admin.id }).first();
@@ -95,7 +95,7 @@ export class AdminRepository {
       });
     }
 
-    const isPasswordValid = await this.comparePassword(data.old_password, existingAdmin.password);
+    const isPasswordValid = await this.comparePassword(data.oldPassword, existingAdmin.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException({
@@ -104,13 +104,13 @@ export class AdminRepository {
       });
     }
 
-    const password = await this.hashPassword(data.new_password);
+    const password = await this.hashPassword(data.newPassword);
 
     await this.knex('admins').where({ id: admin.id }).update({ password }).returning('*');
 
     return {
       status: 'success',
-      message: `Password updated successfully. new password: "${data.new_password}"`,
+      message: `Password updated successfully. new password: "${data.newPassword}"`,
     };
   }
 

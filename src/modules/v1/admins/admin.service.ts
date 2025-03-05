@@ -46,7 +46,7 @@ export class AdminService {
         return {
           status: 'success',
           token: this.createAccessToken(payload),
-          refresh_token: this.createRefreshToken(payload),
+          refreshToken: this.createRefreshToken(payload),
         };
       } else {
         throw new HttpException(
@@ -74,9 +74,9 @@ export class AdminService {
     admin: IPayload;
   }): Promise<IMessage> {
     if (data.admin.role === Role.SUPER_ADMIN) {
-      if ('user_id' in data.updatePassData) {
+      if ('userId' in data.updatePassData) {
         return await this.adminRepository.updatePasswordBySuperadmin(data.updatePassData);
-      } else if ('old_password' in data.updatePassData) {
+      } else if ('oldPassword' in data.updatePassData) {
         return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
       } else {
         throw new HttpException(
@@ -89,7 +89,7 @@ export class AdminService {
         );
       }
     } else if (data.admin.role === Role.ADMIN) {
-      if ('old_password' in data.updatePassData) {
+      if ('oldPassword' in data.updatePassData) {
         return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
       } else {
         throw new HttpException(
@@ -132,8 +132,8 @@ export class AdminService {
       const payload = admin;
 
       return {
-        access_token: this.createAccessToken(payload),
-        refresh_token: this.createRefreshToken(payload),
+        token: this.createAccessToken(payload),
+        refreshToken: this.createRefreshToken(payload),
       };
     } catch (err) {
       throw new UnauthorizedException('Invalid refresh token');

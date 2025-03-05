@@ -3,14 +3,14 @@ import { Request } from '@nestjs/common';
 import Knex from 'knex';
 
 export interface ITokens {
-  access_token: string;
-  refresh_token: string;
+  token: string;
+  refreshToken: string;
 }
 
 export interface IMessageforLogin {
   status: 'success';
   token: string;
-  refresh_token: string;
+  refreshToken: string;
 }
 
 export interface IMessage {
@@ -36,7 +36,7 @@ export interface IAdmin extends Knex.QueryBuilder {
 
 export enum AuthType {
   PASSWORD = "password",
-  PRIVATE_KEY = 'private_key'
+  PRIVATE_KEY = 'privateKey'
 }
 
 export interface IServer extends Knex.QueryBuilder {
@@ -44,10 +44,10 @@ export interface IServer extends Knex.QueryBuilder {
   ip: string;
   port: string;
   username: string;
-  auth_type: AuthType;
+  authType: AuthType;
   password: string;
-  private_key?: string;
-  last_checked: string;
+  privateKey?: string;
+  lastChecked: string;
 }
 
 export interface IPayload {
@@ -70,36 +70,36 @@ export interface IGuardRequest extends Request {
 //   name: string;
 //   icon?: string;
 //   version: string;
-//   file_url: string;
+//   fileUrl: string;
 //   size: number;
-//   download_path: string;
+//   downloadPath: string;
 //   company: string;
 //   description?: string;
-//   support_os: string;
-//   required_cpu_core: number;
-//   required_ram: number;
-//   required_storage: number;
-//   required_network: number;
+//   supportOS: string;
+//   requiredCpuCore: number;
+//   requiredCam: number;
+//   requiredStorage: number;
+//   requiredNetwork: number;
 // }
 export interface IProduct {
   id: string;
   name: string;
   icon?: string;
   version: string;
-  file_url: string;
-  download_path: string;
-  server_id?: string | null;
+  fileUrl: string;
+  downloadPath: string;
+  serverId?: string | null;
   size: number;
   company: string;
   description?: string;
-  support_os: string;
-  required_cpu_core: number;
-  required_ram: number;
-  required_storage: number;
-  required_network: number;
-  computer_count: number;
-  first_upload_at: Date;
-  last_upload_at: Date;
+  supportOS: string;
+  requiredCpuCore: number;
+  requiredRam: number;
+  requiredStorage: number;
+  requiredNetwork: number;
+  computerCount: number;
+  firstUploadAt: Date;
+  lastUploadAt: Date;
 }
 
 

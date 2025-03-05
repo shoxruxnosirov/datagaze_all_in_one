@@ -19,9 +19,9 @@ import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 export class SshRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  // async connect(server_credential: ConnectDto) {
+  // async connect(serverCredential: ConnectDto) {
   //     const result = await this.knex<IServer>('Servers')
-  //         .insert(server_credential)
+  //         .insert(serverCredential)
   //         .returning('*');
 
   //     return result;
@@ -39,12 +39,12 @@ export class SshRepository {
       )
     }
 
-    // await this.knex('servers').where({ id: server.id }).update({ last_checked: Date.now() }).returning('*');
+    // await this.knex('servers').where({ id: server.id }).update({ lastChecked: Date.now() }).returning('*');
     return server;
   }
 
   // async getSshFailureLogs(serverId: string) {
-  //   return await this.knex<IServer>('Servers').where({ server_id: serverId, type: 'error' }).select('*');
+  //   return await this.knex<IServer>('Servers').where({ serverId, type: 'error' }).select('*');
   // }
 
   async storeSshCredentials(connectConfig: ConnectDto): Promise<IServer> {
@@ -77,6 +77,6 @@ export class SshRepository {
     }
   }
   // async autoLogin(serverId: string) {
-  //   return await this.knex<IServer>('Servers').where({ server_id: serverId }).select('*');
+  //   return await this.knex<IServer>('Servers').where({ serverId: serverId }).select('*');
   // }
 }

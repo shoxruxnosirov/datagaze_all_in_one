@@ -15,12 +15,12 @@ export class CreateAdminDto {
 
 export type UpdateAdminPasswordDto =
   | {
-      old_password: string;
-      new_password: string;
+      oldPassword: string;
+      newPassword: string;
     }
   | {
-      user_id: string;
-      new_password: string;
+      userId: string;
+      newPassword: string;
     };
 
 export class UpdateAdminProfileDto {

@@ -47,7 +47,7 @@ const db = Knex(knexConfig);
       table.string('username').notNullable();
       // table.string('auth_type').notNullable();
       table.string('password').nullable();
-      table.string('private_key').nullable();
+      table.text('privateKey').nullable();
       // table.timestamp('last_checked').notNullable().defaultTo(db.fn.now());
       table.string('passphrase').nullable();
       table.string('tryKeyboard').nullable();
@@ -59,24 +59,24 @@ const db = Knex(knexConfig);
       table.text('icon').nullable();
       table.string('version').notNullable();
 
-      // table.string('file_url').notNullable();
+      table.string('fileUrl').notNullable();
       // table.text('download_path').notNullable();
 
-      table.uuid('server_id').nullable().references('id').inTable('servers').onDelete('SET NULL');
+      table.uuid('serverId').nullable().references('id').inTable('servers').onDelete('SET NULL');
 
       table.integer('size').notNullable();
       table.string('company').notNullable();
       table.text('description').nullable();
-      table.string('support_os').notNullable();
+      table.string('supportOS').notNullable();
 
-      table.integer('required_cpu_core').nullable();
-      table.integer('required_ram').nullable();
-      table.integer('required_storage').nullable();
-      table.bigInteger('required_network').nullable();
+      table.integer('requiredCpuCore').nullable();
+      table.integer('requiredRam').nullable();
+      table.integer('requiredStorage').nullable();
+      table.bigInteger('requiredNetwork').nullable();
 
-      table.integer('computer_count').notNullable().defaultTo(0);
-      table.timestamp('first_upload_at').nullable().defaultTo(null);
-      table.timestamp('last_upload_at').nullable().defaultTo(null);
+      table.integer('computerCount').notNullable().defaultTo(0);
+      table.timestamp('firstUploadAt').nullable().defaultTo(null);
+      table.timestamp('lastUploadAt').nullable().defaultTo(null);
     });
 
     await db('products').insert({
@@ -84,20 +84,20 @@ const db = Knex(knexConfig);
       name: 'DLP',
       icon: 'icons/launchpad/dlp.png',
       version: '1.0.0',
-      // file_url: 'https://example.com/superadmin.zip',
+      fileUrl: '/home/ubuntu/datagaze_all_in_one/products/dlp',
       // download_path: '/downloads/superadmin.zip',
-      server_id: null,
+      serverId: null,
       size: 1200, // MB
       company: 'Datagaze',
       description: 'Datagaze DLP',
-      support_os: 'Windows, Linux, MacOS',
-      required_cpu_core: 2,
-      required_ram: 4096, // MB
-      required_storage: 50000, // MB
-      required_network: 100, // Mbps
-      computer_count: 0,
-      first_upload_at: null,
-      last_upload_at: null,
+      supportOS: 'Windows, Linux, MacOS',
+      requiredCpuCore: 2,
+      requiredRam: 4096, // MB
+      requiredStorage: 50000, // MB
+      requiredNetwork: 100, // Mbps
+      computerCount: 0,
+      firstUploadAt: null,
+      lastUploadAt: null,
     });
 
     await db('products').insert({
@@ -105,20 +105,20 @@ const db = Knex(knexConfig);
       name: 'WAF',
       icon: 'icons/launchpad/waf.png',
       version: '1.0.0',
-      // file_url: 'https://example.com/superadmin.zip',
+      fileUrl: '/home/ubuntu/datagaze_all_in_one/products/waf',
       // download_path: '/downloads/superadmin.zip',
-      server_id: null,
+      serverId: null,
       size: 1200, // MB
       company: 'Datagaze',
       description: 'Datagaze WAF',
-      support_os: 'Windows, Linux, MacOS',
-      required_cpu_core: 2,
-      required_ram: 4096, // MB
-      required_storage: 50000, // MB
-      required_network: 100, // Mbps
-      computer_count: 0,
-      first_upload_at: null,
-      last_upload_at: null,
+      supportOS: 'Windows, Linux, MacOS',
+      requiredCpuCore: 2,
+      requiredRam: 4096, // MB
+      requiredStorage: 50000, // MB
+      requiredNetwork: 100, // Mbps
+      computerCount: 0,
+      firstUploadAt: null,
+      lastUploadAt: null,
     });
     
 
