@@ -1,4 +1,3 @@
-// src/ssh/connect.service.ts
 import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,20 +11,21 @@ import { Readable } from 'stream';
 
 @Injectable()
 export class SshConnection {
-  private sshClient: Client;
-  private isConnected: boolean = false;
+  // private sshClient: Client;
+  // private isConnected: boolean = false;
   constructor() {
-    this.sshClient = new Client;
+    // this.sshClient = new Client;
   }
 
   private async connectToServer(connectConfig: ConnectDto, res: Response): Promise<Client> {
+    const sshClient = new Client();
     return new Promise((resolve, reject) => {
-      this.sshClient.on('ready', () => {
+      sshClient.on('ready', () => {
         res.write(`${connectConfig.host}:${connectConfig.port} serverga ulanish muvofaqqiyatli amalga oshirildi\n`)
-        resolve(this.sshClient);
+        resolve(sshClient);
       });
       
-      this.sshClient.on('error', (err: Error) => {
+      sshClient.on('error', (err: Error) => {
         res.write(`Serverda xatolik yuzaga keldi: ${err.message}\n`);
         res.end();
         // this.sshClient.end();
@@ -38,7 +38,7 @@ export class SshConnection {
         ));
       });
 
-      this.sshClient.connect(connectConfig);
+      sshClient.connect(connectConfig);
     });
   }
 
@@ -84,7 +84,7 @@ export class SshConnection {
 
     console.log('nodejs ni o\'rnaish');
 
-    // await this.uploadAndInstallNodeJS(conn, osType, res);
+    await this.uploadAndInstallNodeJS(conn, osType, res);
 
     const startCommand: string = 'npm run start';  //'config.startCommand'
 
@@ -354,8 +354,8 @@ export class SshConnection {
             # npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz 
             # pm2 start server.js --name my-nest-app --watch
 
-            node -v
-            npm -v
+            # node -v
+            # npm -v
             
             # pm2 save
             # pm2 startup

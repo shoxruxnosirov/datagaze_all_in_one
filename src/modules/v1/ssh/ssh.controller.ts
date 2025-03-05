@@ -49,23 +49,23 @@ export class SshController {
     await this.sshService.deployProject(data, res);
   } 
 
-  @Post('exec_comand')
-  @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'exec comand' })
-  @ApiBearerAuth()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        serverId: { type: 'string', example: 'server_id', description: 'db dagi server id' },
-        comand: { default: 'ls -la ~', type: 'string', description: 'buyruq bajarish uchun comanda' },
-      }
-    }
-  })
-  async execComand(data: { serverId: string, comand: string }) {
+  // @Post('exec_comand')
+  // @UseGuards(RolesGuard)
+  // @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  // @ApiOperation({ summary: 'exec comand' })
+  // @ApiBearerAuth()
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       serverId: { type: 'string', example: 'server_id', description: 'db dagi server id' },
+  //       comand: { default: 'ls -la ~', type: 'string', description: 'buyruq bajarish uchun comanda' },
+  //     }
+  //   }
+  // })
+  // async execComand(data: { serverId: string, comand: string }) {
     
-  }
+  // }
 
   // @Post('store-credentials')
   // async storeSshCredentials(connectConfig: ConnectConfig) {

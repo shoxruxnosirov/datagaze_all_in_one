@@ -9,7 +9,7 @@ import { IMessage, IProduct, IServer } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from './dto/dtos';
 
-import { SshGateway } from './sshGateWay';
+import { SshGateway } from './ssh.gateway';
 
 @Injectable()
 export class SshService {
