@@ -141,6 +141,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
             socket.emit('exit', { sessionId, exitCode, signal });
             this.sessions.delete(sessionId);
+            
+            socket.disconnect();
         });
 
         // term.on('error', (err) => {
