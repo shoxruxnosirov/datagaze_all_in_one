@@ -13,6 +13,8 @@ import * as pty from 'node-pty';
 import { SshGatewayConnection } from './ssh.gatewayService';
 import { ConnectDto } from './dto/dtos';
 import { ProductRepository } from 'src/database/repositories/product.repository';
+import { UseGuards } from '@nestjs/common';
+import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 
 interface Session {
     socket: Socket;
@@ -32,6 +34,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sessions = new Map<string, Session>();
     // private socketAndSessions = new Map<Socket, Session>();
 
+    @UseGuards(WebSocketRolesGuard)
     async handleConnection(socket: Socket) {
         // const adminId: string = socket.handshake.headers['adminId'].toString();
         console.log(`SocketClient ulandi: ${socket.id}`);
