@@ -26,7 +26,7 @@ async function bootstrap(): Promise<void> {
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const host = 'localhost';// '0.0.0.0';
+  const host = '0.0.0.0'; // 'localhost';// 
 
   await app.listen(process.env.PORT ?? 3004, host);
 }
