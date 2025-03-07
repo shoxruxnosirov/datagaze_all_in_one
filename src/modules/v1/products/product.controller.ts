@@ -19,7 +19,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get all products' })
   @ApiBearerAuth()
  
-  async getAll(): Promise<IProduct[]> {
+  async getAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
     return this.productsService.findAll();
   }
 
@@ -29,7 +29,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get all products' })
   @ApiBearerAuth()
   @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
-  async getOne(@Param('id') id: string): Promise<IProduct> {
+  async getOne(@Param('id') id: string): Promise<{ id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string }> {
     return this.productsService.findOne(id);
   }
 

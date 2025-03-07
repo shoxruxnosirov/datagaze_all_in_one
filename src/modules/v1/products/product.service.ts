@@ -6,14 +6,14 @@ import { ProductRepository } from 'src/database/repositories/product.repository'
 export class ProductsService {
   constructor(
     private procuctRepository: ProductRepository
-  ) {}
+  ) { }
 
-  
-  async findAll(): Promise<(IProduct & {serverHost: string | null })[]> {
+
+  async findAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
     return this.procuctRepository.getAllProducts();
   }
 
-  async findOne(id: string): Promise<IProduct & {serverHost: string | null }> {
+  async findOne(id: string): Promise<{ id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string }> {
     return this.procuctRepository.getProduct(id);
   }
 

@@ -16,25 +16,74 @@ import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  async getAllProducts(): Promise<(IProduct & { serverHost: string | null })[]> {
-    return this.knex('products')
+  async getAllProducts(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
+    return (await this.knex('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .select(
         'products.*',
         this.knex.raw('servers.host as serverHost')
-      );
+      )).map(product => ({
+        id: product.id,
+        name: product.name,
+        version: product.version,
+        icon: product.icon,
+        installed: product.serverId ?  true : false,
+      }));
+
   }
 
-
-  async getProduct(id: string): Promise<IProduct & { serverHost: string | null }> {
+  async getProductForDeploy(id: string): Promise<{ fileUrl: string }> {
     return this.knex('products')
+      .where('products.id', id)
+      .select('products.fileUrl')  // Select only the urlPath column
+      .first();
+  }
+
+  async getProduct(id: string): Promise<{ id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string }> {
+
+    const product: IProduct & { serverhost: string | null }  =  await this.knex('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .where('products.id', id)
       .select(
         'products.*',
-        this.knex.raw('servers.host as serverHost')
+        this.knex.raw('servers.host as serverhost')
       )
       .first();
+      if(product === undefined) {
+        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+      } else {
+        if(product.serverhost !== null) {
+          return {
+            id: product.id,
+            name: product.name,
+            icon: product.icon,
+            version: product.version,
+            size: product.size,
+            company: product.company,
+            description: product.description,
+            supportOS: product.supportOS,
+            computerCounts: product.computerCount,
+            firstUploadAt: product.firstUploadAt,
+            lastUploadAt: product.lastUploadAt,
+            serverHost: product.serverhost,
+          }
+        } else {
+          return {
+            id: product.id,
+            name: product.name,
+            icon: product.icon,
+            version: product.version,
+            size: product.size,
+            company: product.company,
+            description: product.description,
+            supportOS: product.supportOS,
+            requiredCpuCore: product.requiredCpuCore,
+            requiredRam: product.requiredRam,
+            requiredStorage: product.requiredStorage,
+            requiredNetwork: product.requiredNetwork,
+          }
+        }
+      }
   }
 
   async addServerAndUpdateProduct(serverData: ConnectDto, productId: string) {

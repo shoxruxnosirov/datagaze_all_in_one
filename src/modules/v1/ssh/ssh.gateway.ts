@@ -67,14 +67,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const sessionId = randomUUID(); // Unikal ID yaratish
         socket.emit('open_terminal', { sessionId });
         this.sessions.set(sessionId, { socket, shell: null, ptyTerm: null });
-        const product = await this.procuctRepository.getProduct(config.productId);
+        const { fileUrl } = await this.procuctRepository.getProductForDeploy(config.productId);
 
         const conn = new Client();
 
         // console.log('config: ', config);
         await this.sshGatewayConn.deployProject(
             {
-                localProjectPath: product.fileUrl,
+                localProjectPath: fileUrl,
                 serverCredentials: config.serverCredentials
             },
             socket,
