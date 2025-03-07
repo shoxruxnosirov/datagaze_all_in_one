@@ -40,14 +40,14 @@ export enum AuthType {
 }
 
 export interface IServer extends Knex.QueryBuilder {
-  id: string;
-  ip: string;
+  id?: string;
+  host: string;
   port: string;
   username: string;
-  authType: AuthType;
-  password: string;
+  // authType: AuthType;
+  password?: string;
   privateKey?: string;
-  lastChecked: string;
+  // lastChecked: string;
 }
 
 export interface IPayload {

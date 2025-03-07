@@ -15,6 +15,7 @@ import { ConnectDto } from './dto/dtos';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
+import { IServer } from 'src/comman/types';
 
 interface Session {
     socket: Socket;
@@ -55,6 +56,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     openTerminal(socket: Socket) {
         const sessionId = randomUUID(); // Unikal ID yaratish
         this.connectBackEndTerm(socket, sessionId);
+        socket.emit('open_terminal', { sessionId });
     }
 
     @SubscribeMessage('deploy_product')
@@ -62,10 +64,13 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket: Socket,
         config: { productId: string; serverCredentials: ConnectDto },
     ) {
+        const sessionId = randomUUID(); // Unikal ID yaratish
+        socket.emit('open_terminal', { sessionId });
+        this.sessions.set(sessionId, { socket, shell: null, ptyTerm: null });
         const product = await this.procuctRepository.getProduct(config.productId);
 
-        const sessionId = randomUUID(); // Unikal ID yaratish
         const conn = new Client();
+
         // console.log('config: ', config);
         await this.sshGatewayConn.deployProject(
             {
@@ -82,12 +87,22 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('ssh_connect')
-    handleConnect(socket: Socket, connectConfig: ConnectDto) {
-        const sessionId = randomUUID(); // Unikal ID yaratish
+    async handleConnect(socket: Socket, data: {productId: string}) {
+
+        const server: IServer = await this.procuctRepository.getServerCredentials(data.productId);
+        const sessionId = randomUUID(); 
         const conn = new Client();
 
-        this.connectShell(socket, conn, sessionId);
-        conn.connect(connectConfig);
+        conn.on('ready', () => {
+            this.connectShell(socket, conn, sessionId);
+        });
+        conn.connect({
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            password: server.password,
+            privateKey: server.privateKey,
+        } as ConnectDto);
     }
 
     @SubscribeMessage('command')
@@ -108,15 +123,17 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     // 🔹 Clientdan "ssh_disconnect" eventi kelganda SSH ulanishni yopamiz
-    @SubscribeMessage('disconnect')
-    handleSSHDisconnect(socket: Socket, sessionId: string) {
-        const session: Session | undefined = this.sessions.get(sessionId);
+    @SubscribeMessage('close_terminal')
+    handleSSHDisconnect(socket: Socket, data: {sessionId: string}) {
+        console.log('disconnect: ', data);
+        const session: Session | undefined = this.sessions.get(data.sessionId);
+        console.log('close session: ', session);
         if (session) {
             session.shell?.end();
             session.ptyTerm?.kill();
+            socket.emit('closed_terminal', { sessionId: data.sessionId });
+            this.sessions.delete(data.sessionId);
             socket.disconnect();
-            //   this.clientAndSshConnect.delete(socket);
-            //   socket.emit('alert', { sessionId, message: 'SSH sessiya yopildi' });
             console.log(`SSH uzildi: ${socket.id}`);
         }
     }
@@ -139,25 +156,11 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         term.onExit(({ exitCode, signal }) => {
             console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
-            socket.emit('exit', { sessionId, exitCode, signal });
+            socket.emit('closed_terminal', { sessionId, exitCode, signal });
             this.sessions.delete(sessionId);
-            
+
             socket.disconnect();
         });
-
-        // term.on('error', (err) => {
-        //     console.error('Terminal error:', err);
-        //     socket.emit('error', { sessionId, error: err.message });
-        // });
-
-        // term.on('close', () => {
-        //     console.log('Terminal closed.');
-        // });
-
-        // socket.on('resize', ({ cols, rows }) => {
-        //     console.log(`Resizing terminal to cols: ${cols}, rows: ${rows}`);
-        //     term.resize(cols, rows);
-        // });
 
         this.sessions.set(sessionId, { socket, shell: null, ptyTerm: term });
     }
@@ -168,7 +171,13 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 conn.end();
                 socket.emit('error', { sessionId, message: err.message });
             } else {
-                this.sessions.set(sessionId, { socket, shell: stream, ptyTerm: null });
+                const session: Session | undefined = this.sessions.get(sessionId);
+                if (session) {
+                    session.shell = stream;
+                } else {
+                    socket.emit('open_terminal', { sessionId });
+                    this.sessions.set(sessionId, { socket, shell: stream, ptyTerm: null });
+                }
 
                 stream.on('data', (data: Buffer) => {
                     console.log(data.toString());
@@ -184,6 +193,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
                     // const session: Session | undefined = this.sessions.get(sessionId);
                     // if(session) {
+                    conn.end();
                     this.connectBackEndTerm(socket, sessionId);
                     // }
                 });

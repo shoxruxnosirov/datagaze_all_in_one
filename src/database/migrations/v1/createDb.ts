@@ -1,8 +1,8 @@
 import * as Knex from 'knex';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import knexConfig from 'src/config/database.config';
-
+const path = require('path');
 const db = Knex(knexConfig);
 
 (async function () {
@@ -16,7 +16,7 @@ const db = Knex(knexConfig);
     await db.schema.dropTableIfExists('servers');
     await db.schema.dropTableIfExists('Servers');
     
-    const SUPERADMIN_PASSWORD: string = await bcrypt.hash<string>('superadmin', 10);
+    const SUPERADMIN_PASSWORD: string = await bcrypt.hash('superadmin', 10);
     
     await db.schema.createTable('admins', function (table) {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
@@ -84,7 +84,7 @@ const db = Knex(knexConfig);
       name: 'DLP',
       icon: 'icons/launchpad/dlp.png',
       version: '1.0.0',
-      fileUrl: '/home/ubuntu/datagaze_all_in_one/products/dlp',
+      fileUrl: path.join(process.cwd(), 'products/dlp'),
       // download_path: '/downloads/superadmin.zip',
       serverId: null,
       size: 1200, // MB
@@ -105,7 +105,7 @@ const db = Knex(knexConfig);
       name: 'WAF',
       icon: 'icons/launchpad/waf.png',
       version: '1.0.0',
-      fileUrl: '/home/ubuntu/datagaze_all_in_one/products/waf',
+      fileUrl: path.join(process.cwd(), 'products/waf'),
       // download_path: '/downloads/superadmin.zip',
       serverId: null,
       size: 1200, // MB

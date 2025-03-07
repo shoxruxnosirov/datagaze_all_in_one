@@ -4,6 +4,7 @@ import {
   Inject,
   Injectable,
 } from '@nestjs/common';
+import { WsException } from '@nestjs/websockets';
 
 import { Knex } from 'knex';
 import { IProduct, IServer } from 'src/comman/types';
@@ -15,7 +16,7 @@ import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  async getAllProducts(): Promise<(IProduct & {serverHost: string | null })[]> {
+  async getAllProducts(): Promise<(IProduct & { serverHost: string | null })[]> {
     return this.knex('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .select(
@@ -23,7 +24,7 @@ export class ProductRepository {
         this.knex.raw('servers.host as serverHost')
       );
   }
-  
+
 
   async getProduct(id: string): Promise<IProduct & { serverHost: string | null }> {
     return this.knex('products')
@@ -51,5 +52,20 @@ export class ProductRepository {
       return server;
     });
   }
-  
+
+  async getServerCredentials(productId: string): Promise<IServer> {
+    const server = await this.knex('products')
+      .join('servers', 'products.serverId', 'servers.id')
+      .where('products.id', productId)
+      .select('servers.*')
+      .first();
+
+    if (!server) {
+      throw new WsException(`Server not found by produectId: ${productId}`);
+    }
+    
+    return server;
+  }
+
+
 }

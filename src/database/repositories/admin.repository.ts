@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 
 import { Knex } from 'knex';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 import { IAdmin, IMessage, IPayload } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';

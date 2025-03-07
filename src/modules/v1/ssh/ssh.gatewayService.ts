@@ -315,7 +315,7 @@ export class SshGatewayConnection {
             } //if (osType === 'Linux')
             else {
                 localProjectPath = path.join(localProjectPath, 'product.tar.xz');
-                localProjectPath = "/home/kali/.ssh/filePem.pem";
+                // localProjectPath = "/home/kali/.ssh/filePem.pem";
                 remoteFile = `product.tar.xz`;
                 remoteProjectPath = `~`;
             }
