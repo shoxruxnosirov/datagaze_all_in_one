@@ -13,7 +13,7 @@ export class ProductsService {
     return this.procuctRepository.getAllProducts();
   }
 
-  async findOne(id: string): Promise<{ id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string }> {
+  async findOne(id: string): Promise<{id: string, name: string, icon?: string, version: string, installed: boolean} & ({  size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string })> {
     return this.procuctRepository.getProduct(id);
   }
 

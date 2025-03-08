@@ -27,7 +27,7 @@ export class ProductRepository {
         name: product.name,
         version: product.version,
         icon: product.icon,
-        installed: product.serverId ?  true : false,
+        installed: product.serverId ? true : false,
       }));
 
   }
@@ -39,9 +39,9 @@ export class ProductRepository {
       .first();
   }
 
-  async getProduct(id: string): Promise<{ id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { id: string, name: string, icon?: string, version: string, size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string }> {
+  async getProduct(id: string): Promise<{ id: string, name: string, icon?: string, version: string, installed: boolean } & ({ size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string })> {
 
-    const product: IProduct & { serverhost: string | null }  =  await this.knex('products')
+    const product: IProduct & { serverhost: string | null } = await this.knex('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .where('products.id', id)
       .select(
@@ -49,41 +49,42 @@ export class ProductRepository {
         this.knex.raw('servers.host as serverhost')
       )
       .first();
-      if(product === undefined) {
-        throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+    if (product === undefined) {
+      throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+    } else {
+      const _product: { id: string, name: string, icon?: string, version: string, installed: boolean } = {
+        id: product.id,
+        name: product.name,
+        icon: product.icon,
+        version: product.version,
+        installed: product.serverId ? true : false,
+      }
+      if (product.serverhost !== null) {
+        return {
+          ..._product,
+          size: product.size,
+          company: product.company,
+          description: product.description,
+          supportOS: product.supportOS,
+          computerCounts: product.computerCount,
+          firstUploadAt: product.firstUploadAt,
+          lastUploadAt: product.lastUploadAt,
+          serverHost: product.serverhost,
+        }
       } else {
-        if(product.serverhost !== null) {
-          return {
-            id: product.id,
-            name: product.name,
-            icon: product.icon,
-            version: product.version,
-            size: product.size,
-            company: product.company,
-            description: product.description,
-            supportOS: product.supportOS,
-            computerCounts: product.computerCount,
-            firstUploadAt: product.firstUploadAt,
-            lastUploadAt: product.lastUploadAt,
-            serverHost: product.serverhost,
-          }
-        } else {
-          return {
-            id: product.id,
-            name: product.name,
-            icon: product.icon,
-            version: product.version,
-            size: product.size,
-            company: product.company,
-            description: product.description,
-            supportOS: product.supportOS,
-            requiredCpuCore: product.requiredCpuCore,
-            requiredRam: product.requiredRam,
-            requiredStorage: product.requiredStorage,
-            requiredNetwork: product.requiredNetwork,
-          }
+        return {
+          ..._product,
+          size: product.size,
+          company: product.company,
+          description: product.description,
+          supportOS: product.supportOS,
+          requiredCpuCore: product.requiredCpuCore,
+          requiredRam: product.requiredRam,
+          requiredStorage: product.requiredStorage,
+          requiredNetwork: product.requiredNetwork,
         }
       }
+    }
   }
 
   async addServerAndUpdateProduct(serverData: ConnectDto, productId: string) {
@@ -112,7 +113,7 @@ export class ProductRepository {
     if (!server) {
       throw new WsException(`Server not found by produectId: ${productId}`);
     }
-    
+
     return server;
   }
 
