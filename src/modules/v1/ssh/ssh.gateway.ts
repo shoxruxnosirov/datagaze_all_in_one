@@ -17,6 +17,10 @@ import { UseGuards } from '@nestjs/common';
 import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 import { IServer } from 'src/comman/types';
 
+import * as fs from 'fs';
+
+const filePath = 'example.txt';
+
 interface Session {
     socket: Socket;
     shell: Channel | null;
@@ -66,7 +70,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     ) {
         const sessionId = randomUUID(); // Unikal ID yaratish
         socket.emit('open_terminal', { sessionId });
-        this.sessions.set(sessionId, { socket, shell: null, ptyTerm: null });
+        this.sessions.set(sessionId, { socket, shell: null, ptyTerm: null});
         const { fileUrl } = await this.procuctRepository.getProductForDeploy(config.productId);
 
         const conn = new Client();
@@ -87,10 +91,10 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     @SubscribeMessage('ssh_connect')
-    async handleConnect(socket: Socket, data: {productId: string}) {
+    async handleConnect(socket: Socket, data: { productId: string }) {
 
         const server: IServer = await this.procuctRepository.getServerCredentials(data.productId);
-        const sessionId = randomUUID(); 
+        const sessionId = randomUUID();
         const conn = new Client();
 
         conn.on('ready', () => {
@@ -108,6 +112,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('command')
     handleCommand(socket: Socket, { sessionId, command }) {
         const session = this.sessions.get(sessionId);
+        command = command.split('\n').join(' && ');
         if (session) {
             // console.log(`${sessionId}: ${command}`);
             if (session.shell) {
@@ -124,10 +129,10 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     // 🔹 Clientdan "ssh_disconnect" eventi kelganda SSH ulanishni yopamiz
     @SubscribeMessage('close_terminal')
-    handleSSHDisconnect(socket: Socket, data: {sessionId: string}) {
-        console.log('disconnect: ', data);
+    handleSSHDisconnect(socket: Socket, data: { sessionId: string }) {
+        // console.log('disconnect: ', data);
         const session: Session | undefined = this.sessions.get(data.sessionId);
-        console.log('close session: ', session);
+        // console.log('close session: ', session);
         if (session) {
             session.shell?.end();
             session.ptyTerm?.kill();
@@ -166,40 +171,78 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     private connectShell(socket: Socket, conn: Client, sessionId: string) {
-        conn.shell((err: Error, stream: Channel) => {
-            if (err) {
-                conn.end();
-                socket.emit('error', { sessionId, message: err.message });
-            } else {
-                const session: Session | undefined = this.sessions.get(sessionId);
-                if (session) {
-                    session.shell = stream;
-                } else {
-                    socket.emit('open_terminal', { sessionId });
-                    this.sessions.set(sessionId, { socket, shell: stream, ptyTerm: null });
-                }
-
-                stream.on('data', (data: Buffer) => {
-                    console.log(data.toString());
-                    socket.emit('data', { sessionId, output: data.toString() });
-                });
-
-                stream.on('error', (err: Error) => {
-                    socket.emit('error', { sessionId, message: err.message });
-                });
-
-                stream.on('close', () => {
-                    // this.sessions.delete(sessionId);
-                    socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
-                    // const session: Session | undefined = this.sessions.get(sessionId);
-                    // if(session) {
+        conn.shell(
+            {
+                term: 'xterm',
+                cols: 300,
+                rows: 40,
+                echo: false,
+                pty: true,
+                env: { LANG: 'en_US.UTF-8' },
+            },
+            (err: Error, stream: Channel) => {
+                if (err) {
                     conn.end();
-                    this.connectBackEndTerm(socket, sessionId);
-                    // }
-                });
+                    socket.emit('error', { sessionId, message: err.message });
+                } else {
+                    let _line = '';
+                    const session: Session | undefined = this.sessions.get(sessionId);
+                    if (session) {
+                        session.shell = stream;
+                    } else {
+                        socket.emit('open_terminal', { sessionId });
+                        this.sessions.set(sessionId, { socket, shell: stream, ptyTerm: null});
+                    }
 
-                socket.emit('alert', { sessionId, message: 'ssh Terminal ochildi' });
-            }
-        });
+                    stream.on('data', (data: Buffer) => {
+                        const output = data.toString();
+                        // socket.emit('data', { sessionId, output });
+                        // console.log(output);
+                        if(output.includes('\n')) {
+                            const lines = output.split('\n');
+                            const lastLine = lines.pop();
+                            lines.forEach((line, index) => {
+                                if(index === 0){
+                                    socket.emit('data', { sessionId, output: `${_line}${line}`  });
+                                    console.log(`${_line}${line}`);
+                                } else {
+                                    socket.emit('data', { sessionId, output: line });
+                                    console.log(line);
+                                }                               
+                            });
+                            _line = lastLine || '';
+                            socket.emit('data', { sessionId, output });
+                        } else {
+                            _line += output;
+                        }
+
+                    });
+
+                    stream.on('error', (err: Error) => {
+                        socket.emit('error', { sessionId, message: err.message });
+                    });
+
+                    // ✅ Terminalni to‘g‘ri ishlashi uchun sozlash
+                    // stream.write('stty raw -echo\n');
+
+                    stream.on('close', () => {
+                        // this.sessions.delete(sessionId);
+                        socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
+                        // const session: Session | undefined = this.sessions.get(sessionId);
+                        // if(session) {
+                        conn.end();
+                        this.connectBackEndTerm(socket, sessionId);
+                        // }
+                    });
+
+                    stream.on('end', () => {
+                        socket.emit('data', { sessionId, output: _line });
+                        _line = '';
+                        console.log('Stream end');
+                    });
+
+                    socket.emit('alert', { sessionId, message: 'ssh Terminal ochildi' });
+                }
+            });
     }
 }

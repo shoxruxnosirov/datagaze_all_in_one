@@ -72,7 +72,7 @@ const db = Knex(knexConfig);
       table.integer('requiredCpuCore').nullable();
       table.integer('requiredRam').nullable();
       table.integer('requiredStorage').nullable();
-      table.bigInteger('requiredNetwork').nullable();
+      table.integer('requiredNetwork').nullable();
 
       table.integer('computerCount').notNullable().defaultTo(0);
       table.timestamp('firstUploadAt').nullable().defaultTo(null);
@@ -83,18 +83,18 @@ const db = Knex(knexConfig);
       id: db.raw('uuid_generate_v4()'),
       name: 'DLP',
       icon: 'icons/launchpad/dlp.png',
-      version: '1.0.0',
+      version: '2.4.5',
       fileUrl: path.join(process.cwd(), 'products/dlp'),
       // download_path: '/downloads/superadmin.zip',
       serverId: null,
-      size: 1200, // MB
+      size: 1300, // MB
       company: 'Datagaze',
       description: 'Datagaze DLP',
       supportOS: 'Windows, Linux, MacOS',
-      requiredCpuCore: 2,
-      requiredRam: 4096, // MB
-      requiredStorage: 50000, // MB
-      requiredNetwork: 100, // Mbps
+      requiredCpuCore: 8,
+      requiredRam: 16, // MB
+      requiredStorage: 500, // MB
+      requiredNetwork: 1, // Mbps
       computerCount: 0,
       firstUploadAt: null,
       lastUploadAt: null,
@@ -104,18 +104,18 @@ const db = Knex(knexConfig);
       id: db.raw('uuid_generate_v4()'),
       name: 'WAF',
       icon: 'icons/launchpad/waf.png',
-      version: '1.0.0',
+      version: '2.6.3',
       fileUrl: path.join(process.cwd(), 'products/waf'),
       // download_path: '/downloads/superadmin.zip',
       serverId: null,
-      size: 1200, // MB
+      size: 1300, // MB
       company: 'Datagaze',
       description: 'Datagaze WAF',
       supportOS: 'Windows, Linux, MacOS',
-      requiredCpuCore: 2,
-      requiredRam: 4096, // MB
-      requiredStorage: 50000, // MB
-      requiredNetwork: 100, // Mbps
+      requiredCpuCore: 8,
+      requiredRam: 16, // MB
+      requiredStorage: 500, // MB
+      requiredNetwork: 1, // Mbps
       computerCount: 0,
       firstUploadAt: null,
       lastUploadAt: null,
