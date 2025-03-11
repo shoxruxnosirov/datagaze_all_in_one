@@ -28,13 +28,15 @@ export class SshGatewayConnection {
         connectConfig: ConnectDto,
         conn: Client,
         socket: Socket,
+        sessionId
     ): Promise<void> {
         // console.log('connectData: ', connectConfig);
         return new Promise((resolve, reject) => {
             conn.on('ready', () => {
-                socket.emit('alert', {
-                    message: `${connectConfig.host}:${connectConfig.port} serverga ulandi\n`,
-                });
+                // socket.emit('alert', {
+                //     message: `${connectConfig.host}:${connectConfig.port} serverga ulandi\n`,
+                // });
+                socket.emit('open_terminal', { sessionId });
                 resolve();
             });
 
@@ -89,14 +91,14 @@ export class SshGatewayConnection {
         conn: Client,
         sessionId: string
     ): Promise<void> {
-        await this.connectToServer(config.serverCredentials, conn, socket);
+        await this.connectToServer(config.serverCredentials, conn, socket, sessionId);
         const osType = await this.findOsType(conn, socket);
-        // await this.uploadAndInstallNodeJS(conn, osType, socket);
+        // await this.uploadAndInstallNodeJS(conn, osType, socket, sessionId);
         // const startCommand: string = 'npm run start'; //'config.startCommand'
-        // // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath);
-        await this.uploadProduct(conn, config.localProjectPath, osType, socket); // startCommand);
+        // // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath, sessionId);
+        await this.uploadProduct(conn, config.localProjectPath, osType, socket, sessionId); // startCommand);
         // await this.disconnectFromServer(conn, socket);
-        socket.emit('data', { sessionId, output: 'terminaldan foydalnishing mumkin!' });
+        socket.emit('data', { sessionId, output: 'terminaldan foydalnishing mumkin!\r\n' });
     }
 
     private async findOsType(conn: Client, socket: Socket): Promise<string> {
@@ -140,7 +142,7 @@ export class SshGatewayConnection {
         });
     }
 
-    private async uploadAndInstallNodeJS(conn: Client, osType: string, socket: Socket) {
+    private async uploadAndInstallNodeJS(conn: Client, osType: string, socket: Socket, sessionId: string) {
         return new Promise((resolve, reject) => {
             let remoteFile: string;
             let localFilePath: string;
@@ -173,7 +175,7 @@ export class SshGatewayConnection {
                 let progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                 console.log(`\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
-                socket.emit('data', { output: `\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
+                socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
 
                 const readStream = fs.createReadStream(localFilePath);
                 const writeStream: Writable = sftp.createWriteStream(remoteFile);
@@ -185,12 +187,12 @@ export class SshGatewayConnection {
                     const progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                     console.log(`\x1b[A\x1b[K\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
-                    socket.emit('data', { output: `\x1b[A\x1b[K\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
+                    socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
                 });
 
                 writeStream.on('close', () => {
                     console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Nodejs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m`);
-                    socket.emit('data', { output: `\x1b[A\x1b[K\x1b[01;34m📦 NodeJs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m` });
+                    socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 NodeJs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m` });
 
                     sftp.end();
 
@@ -251,7 +253,7 @@ export class SshGatewayConnection {
 
                             stream.on('data', (data: Buffer) => {
                                 console.log(`\x1b[A\x1b[K📦 Nodejs version: ${data.toString()} \x1b[0m`);
-                                socket.emit('data', { output: `\x1b[A\x1b[K📦 Nodejs version: ${data.toString()} \x1b[0m` });
+                                socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G📦 Nodejs version: ${data.toString()} \x1b[0m` });
                             });
 
                             stream.stderr.on('data', (data: Buffer) => {
@@ -277,7 +279,7 @@ export class SshGatewayConnection {
 
                             stream.on('close', () => {
                                 console.log('✅ Node.js o‘rnatildi!');
-                                socket.emit('data', { output: `\x1b[A\x1b[KNodejs ni o'rnatildi !\x1b[0m` });
+                                socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GNodejs ni o'rnatildi !\x1b[0m` });
                                 resolve('success');
                             });
                         },
@@ -302,6 +304,7 @@ export class SshGatewayConnection {
         localProjectPath: string,
         osType: string,
         socket: Socket,
+        sessionId
         // srartCommend: string,
     ): Promise<string> {
         return new Promise((resolve, reject) => {
@@ -346,7 +349,7 @@ export class SshGatewayConnection {
                 let progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                 console.log(`\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
-                socket.emit('data', { output: `\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
+                socket.emit('data', { sessionId, output: `\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
 
                 readStream.on('data', (chunk) => {
 
@@ -355,20 +358,24 @@ export class SshGatewayConnection {
                     filledLength = Math.round((+progress / 100) * barLength);
                     progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
-                    console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
-                    socket.emit('data', { output: `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
+                    // console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
+                    // console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
+
+                    // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
+                    socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
                 });
 
                 writeStream.on('close', () => {
                     console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi\x1b[0m`);
-                    socket.emit('data', { output: `\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m` });
+                    // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m` });
+                    socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m\r\n` });
 
                     sftp.end();
 
                     readStream.destroy();
                     writeStream.destroy();
 
-                resolve('success');
+                    resolve('success');
 
 
                     const linuxCommands = `
@@ -435,7 +442,7 @@ export class SshGatewayConnection {
                             }
 
                             stream.on('data', (data: Buffer) => {
-                                socket.emit('data', { output: `${data.toString()}` });
+                                socket.emit('data', { sessionId, output: `${data.toString()}` });
                                 console.log('📌 Output (product arxivdan ochish):', data.toString());
                             });
                             stream.stderr.on('data', (data: Buffer) => {
@@ -461,7 +468,7 @@ export class SshGatewayConnection {
 
                             stream.on('close', () => {
                                 console.log(`\x1b[A\x1b[KProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m`);
-                                socket.emit('data', { output: `\x1b[A\x1b[KProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m` });
+                                socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m` });
                                 resolve('success');
                             });
                         },
