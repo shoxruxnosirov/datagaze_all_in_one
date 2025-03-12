@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Frontend</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+
+    <style>
+        .terminal-wrapper {
+            border: 1px solid #444;
+            margin-bottom: 10px;
+            background: #222;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .terminal-title {
+            background: #333;
+            color: white;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .terminal-title button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .terminal {
+            height: 300px;
+            width: 100%;
+            background: black;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Deploy Form -->
+    <div>
+        <input type="text" id="productId" placeholder="Product ID" , value="3036a0b6-bd5b-4dc8-8edd-62c72be866ec"><br>
+        <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
+        <input type="text" id="port" placeholder="Port" value="22"><br>
+        <input type="text" id="username" placeholder="Username" value="root"><br>
+        <input type="password" id="password" placeholder="Password" value="Datagaze2134$Platform"><br>
+        <button onclick="deploy()">Deploy</button>
+    </div>
+    <br>
+    <!-- Go to Server Form -->
+    <div>
+        <input type="text" id="serverProductId" placeholder="Product ID"><br>
+        <button onclick="goToServer()">Go To Server</button>
+    </div>
+    <br>
+    <!-- Own Terminal Button -->
+    <div>
+        <button onclick="openOwnTerminal()">Own Terminal</button>
+    </div>
+
+    <script>
+        let socket = null;
+
+        const terminals = new Map();
+
+        function initSocket() {
+            if (!socket) {
+                socket = io('ws://localhost:3004', {
+                    extraHeaders: {
+                        transports: ['websocket'],
+                        // Authorization: `Bearer ${sean.jwtToken}`,
+                        // customAccountId: sean.account_id,
+                    }
+                });
+
+                socket.on('connect', () => {
+                    console.log('Connected to server');
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    socket = null;
+                });
+
+                socket.on('open_terminal', ({ sessionId }) => {
+                    console.log('open_terminal sessionId: ', sessionId);
+                    openNewTerminal(sessionId);
+                });
+
+                socket.on('closed_teminal', ({ sessionId }) => {
+                    // const terminal = terminals.get(sessionId).term;
+                    document.getElementById(sessionId)?.remove();
+                    terminals.delete(sessionId);
+                });
+
+                socket.on('data', ({ sessionId, output }) => {
+                    const termObj = terminals.get(sessionId);
+                    console.log('outputttt: ', output);
+                    // console.log('Connected to server');
+                    if (termObj.getIsAutoComplete()) {
+                        if(output !== '\u0007'){
+                            termObj.auto_complate(output);
+                            terminals.get(sessionId)?.term.write(output);
+                        }
+                        return;
+                    }
+                    // console.log('data sessionId: ', sessionId);
+                    terminals.get(sessionId)?.term.write(output);
+                    // console.log(term);
+                });
+
+                // socket.on('auto_complete', ({ sessionId, command }) => {
+
+                //     console.log('auto_complete sessionId: ', sessionId);
+                //     console.log('auto_complete command: ', command);
+                //     // term.write(command); // Backenddan kelgan natijani ekranga chiqarish
+                // });
+
+                // socket.on('alert', () => {
+                //     console.log('Connected to server');
+                // });
+                // socket.on('error', () => {
+                //     console.log('Connected to server');
+                // });
+            }
+        }
+
+        function openNewTerminal(sessionId) {
+            // initSocket();
+
+            let terminalId = sessionId; // Unikal ID yaratamiz
+            let terminalWrapper = document.createElement('div');
+            terminalWrapper.className = "terminal-wrapper";
+            terminalWrapper.id = terminalId;
+
+            // Terminal sarlavhasi (title)
+            let terminalTitle = document.createElement('div');
+            terminalTitle.className = "terminal-title";
+            terminalTitle.innerHTML = `
+                <span>Terminal ${terminalId}</span>
+                <button onclick="toggleTerminal('${terminalId}')">⬇️</button>
+                <button onclick="closeTerminal('${terminalId}')">❌</button>
+            `;
+
+            // Terminal div
+            let terminalDiv = document.createElement('div');
+            terminalDiv.className = "terminal";
+            terminalDiv.style.display = "block";
+
+            terminalWrapper.appendChild(terminalTitle);
+            terminalWrapper.appendChild(terminalDiv);
+            document.body.appendChild(terminalWrapper);
+
+            let term = new Terminal({
+                cursorBlink: true,     // Blinking cursor
+                rows: 16,              // Qatorlar soni
+                cols: 120,              // Ustunlar soni
+                fontSize: 14,          // Font hajmi
+                theme: { background: "#000000" } // Qora fon
+            });
+            term.open(terminalDiv);
+
+            let inputBuffer = '';
+            isAutoComplete = false;
+            terminals.set(
+                sessionId, 
+                {
+                    term,
+                    auto_complate: value => inputBuffer += value,
+                    getIsAutoComplete: () => {
+                        const tmp = isAutoComplete;
+                        isAutoComplete = false;
+                        return tmp;
+                    },
+                }
+            ); 
+
+            term.onData(data => {
+                socket.emit('command', { sessionId, command: data });
+            });
+
+        }
+
+        // Terminalni ochish yoki yopish
+        function toggleTerminal(id) {
+            let terminalDiv = document.querySelector(`#${id} .terminal`);
+            terminalDiv.style.display = terminalDiv.style.display === "none" ? "block" : "none";
+        }
+
+        // // Terminalni yopish
+        // function closeTerminal(id) {
+        //     document.getElementById(id).remove();
+        //     delete terminals[id]; // Terminal obyektini o‘chirish
+        // }
+
+        function deploy() {
+            initSocket();
+            // const {
+            const productId = document.getElementById('productId').value;
+            const host = document.getElementById('host').value;
+            const port = +document.getElementById('port').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            // };
+            socket.emit('deploy_product', {
+                productId,
+                serverCredentials: {
+                    host,
+                    port,
+                    username,
+                    password
+                }
+            });
+        }
+
+        function goToServer() {
+            initSocket();
+            const data = {
+                productId: document.getElementById('serverProductId').value
+            };
+            socket.emit('ssh_connect', data);
+        }
+
+        function openOwnTerminal() {
+            initSocket();
+            const data = { type: 'own_terminal' };
+            socket.emit('own_terminal', data);
+        }
+    </script>
+</body>
+
+</html>

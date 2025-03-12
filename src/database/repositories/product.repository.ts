@@ -17,19 +17,21 @@ export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
   async getAllProducts(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
-    return (await this.knex('products')
-      .leftJoin('servers', 'products.serverId', 'servers.id')
-      .select(
-        'products.*',
-        this.knex.raw('servers.host as serverHost')
-      )).map(product => ({
-        id: product.id,
-        name: product.name,
-        version: product.version,
-        icon: product.icon,
-        installed: product.serverId ? true : false,
-      }));
-
+    return (
+      await this.knex('products')
+        .leftJoin('servers', 'products.serverId', 'servers.id')
+        .select(
+          'products.*',
+          this.knex.raw('servers.host as serverHost')
+        )
+    ).map(product => ({
+      id: product.id,
+      name: product.name,
+      version: product.version,
+      icon: product.icon,
+      installed: product.serverId ? true : false,
+    })
+    );
   }
 
   async getProductForDeploy(id: string): Promise<{ fileUrl: string }> {
@@ -39,8 +41,34 @@ export class ProductRepository {
       .first();
   }
 
-  async getProduct(id: string): Promise<{ id: string, name: string, icon?: string, version: string, installed: boolean } & ({ size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string })> {
-
+  async getProduct(
+    id: string
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      icon?: string;
+      version: string;
+      installed: boolean;
+      size: number;
+      company: string;
+      description?: string;
+    } & (
+      | {
+        supportOS: string;
+        requiredCpuCore: number;
+        requiredRam: number;
+        requiredStorage: number;
+        requiredNetwork: number;
+      }
+      | {
+        computerCounts: number;
+        firstUploadAt?: Date;
+        lastUploadAt?: Date;
+        serverHost: string;
+      }
+    )
+  > {
     const product: IProduct & { serverhost: string | null } = await this.knex('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .where('products.id', id)
@@ -65,7 +93,6 @@ export class ProductRepository {
           size: product.size,
           company: product.company,
           description: product.description,
-          supportOS: product.supportOS,
           computerCounts: product.computerCount,
           firstUploadAt: product.firstUploadAt,
           lastUploadAt: product.lastUploadAt,
@@ -87,20 +114,74 @@ export class ProductRepository {
     }
   }
 
-  async addServerAndUpdateProduct(serverData: ConnectDto, productId: string) {
-    return this.knex.transaction(async (trx) => {
-      // 1. `servers` jadvaliga yangi ma'lumot qo'shamiz
-      const [server] = await trx('servers')
-        .insert(serverData)
-        .returning(['id']); // ID ni qaytarib olamiz (PostgreSQL ishlatilsa)
+  // async addServerAndUpdateProduct(serverData: ConnectDto, productId: string) {
+  //   return this.knex.transaction(async (trx) => {
+  //     // 1. `servers` jadvaliga yangi ma'lumot qo'shamiz
+  //     const [server] = await trx('servers')
+  //       .insert(serverData)
+  //       .returning(['id']); // ID ni qaytarib olamiz (PostgreSQL ishlatilsa)
 
-      // 2. `products` jadvalidagi `server_id` ni yangilaymiz
-      await trx('products')
-        .where({ id: productId })
-        .update({ serverId: server.id });
+  //     // 2. `products` jadvalidagi `server_id` ni yangilaymiz
+  //     await trx('products')
+  //       .where({ id: productId })
+  //       .update({ serverId: server.id });
 
-      return server;
-    });
+  //     return server;
+  //   });
+  // }
+
+  async addServerAndUpdateProduct(serverData: ConnectDto, productId: string): Promise<void> {
+    const result = await this.knex
+      .with('new_server', (qb) => {
+        qb.insert(serverData).into('servers').returning('*');
+      })
+      .update({ serverId: this.knex.raw('(SELECT id FROM new_server)') })
+      .from('products')
+      .where('id', productId)
+      .returning([
+        'products.*',
+        this.knex.raw('(SELECT id FROM new_server) AS serverId'),
+      ]);
+
+    if (!result.length) {
+      throw new WsException('Product not found');
+    }
+    // return {
+    //   product: {
+    //     id: result[0].id,
+    //     name: result[0].name,
+    //     icon: result[0].icon,
+    //     version: result[0].version,
+    //     installed: Boolean(result[0].serverId),
+    //     size: result[0].size,
+    //     company: result[0].company,
+    //     supportOS: result[0].supportOS,
+    //     requiredCpuCore: result[0].requiredCpuCore,
+    //     requiredRam: result[0].requiredRam,
+    //     requiredStorage: result[0].requiredStorage,
+    //     requiredNetwork: result[0].requiredNetwork,
+    //   },
+    //   server: {
+    //     id: result[0].serverId, // Yangi yaratilgan server ID
+    //   },
+    // };
+  }
+
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IServer> {
+    const result: IServer[] = await this.knex('servers')
+      .update(serverData)
+      .where('id', function () {
+        this.select('serverId')
+          .from('products')
+          .where('id', productId);
+      })
+      .returning('*');
+
+    if (!result.length) {
+      throw new HttpException('Server or Product not found', HttpStatus.NOT_FOUND);
+    }
+
+    return result[0];
   }
 
   async getServerCredentials(productId: string): Promise<IServer> {
@@ -117,5 +198,53 @@ export class ProductRepository {
     return server;
   }
 
+  async deleteServerForProduct(
+    id: string
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      icon?: string;
+      version: string;
+      installed: boolean;
+      size: number;
+      company: string;
+      description?: string;
+      supportOS: string;
+      requiredCpuCore: number;
+      requiredRam: number;
+      requiredStorage: number;
+      requiredNetwork: number;
+    }
+  > {
+    const result = await this.knex
+      .with('deleted_server', (qb) => {
+        qb.from('servers')
+          .where('id', this.knex('products').where('id', id).select('serverId'))
+          .delete();
+      })
+      .select('products.*')
+      .from('products')
+      .where('products.id', id)
+      .first();
 
+    if (!result) {
+      throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
+    }
+
+    return {
+      id: result.id,
+      name: result.name,
+      icon: result.icon,
+      version: result.version,
+      installed: false,
+      size: result.size,
+      company: result.company,
+      supportOS: result.supportOS,
+      requiredCpuCore: result.requiredCpuCore,
+      requiredRam: result.requiredRam,
+      requiredStorage: result.requiredStorage,
+      requiredNetwork: result.requiredNetwork,
+    };
+  }
 }

@@ -10,7 +10,7 @@ import { Knex } from 'knex';
 import { ConnectConfig } from 'ssh2';
 
 
-import { AuthType, IServer } from 'src/comman/types';
+import { AuthType, IProduct, IServer } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 // import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
@@ -29,7 +29,7 @@ export class SshRepository {
   // }
   async getSshStatus(serverId: string): Promise<IServer> {
     const server: IServer | undefined = await this.knex<IServer>('servers').where({ id: serverId }).first();
-    if(!server) {
+    if (!server) {
       throw new HttpException(
         {
           status: 'error',
@@ -64,7 +64,7 @@ export class SshRepository {
 
   async getServerData(serverId: string): Promise<IServer> {
     const serverData: IServer | undefined = await this.knex<IServer>('servers').where({ id: serverId }).first();
-    if(serverData){
+    if (serverData) {
       return serverData;
     } else {
       throw new HttpException(
@@ -76,6 +76,7 @@ export class SshRepository {
       )
     }
   }
+
   // async autoLogin(serverId: string) {
   //   return await this.knex<IServer>('Servers').where({ serverId: serverId }).select('*');
   // }

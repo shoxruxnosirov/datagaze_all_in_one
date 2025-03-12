@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { IProduct } from 'src/comman/types';
+import { IProduct, IServer } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
+import { ConnectDto } from '../ssh/dto/dtos';
 
 @Injectable()
 export class ProductsService {
@@ -13,8 +14,61 @@ export class ProductsService {
     return this.procuctRepository.getAllProducts();
   }
 
-  async findOne(id: string): Promise<{id: string, name: string, icon?: string, version: string, installed: boolean} & ({  size: number, company: string, description?: string, supportOS: string, requiredCpuCore: number, requiredRam: number, requiredStorage: number, requiredNetwork: number } | { size: number, company: string, description?: string, supportOS: string, computerCounts: number, firstUploadAt?: Date, lastUploadAt?: Date, serverHost: string })> {
+  async findOne(
+    id: string
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      icon?: string;
+      version: string;
+      installed: boolean;
+      size: number;
+      company: string;
+      description?: string;
+    } & (
+      | {
+        supportOS: string;
+        requiredCpuCore: number;
+        requiredRam: number;
+        requiredStorage: number;
+        requiredNetwork: number;
+      }
+      | {
+        computerCounts: number;
+        firstUploadAt?: Date;
+        lastUploadAt?: Date;
+        serverHost: string;
+      }
+    )
+  > {
     return this.procuctRepository.getProduct(id);
+  }
+
+  async deleteServerForProduct(
+    id: string
+  ): Promise<
+    {
+      id: string;
+      name: string;
+      icon?: string;
+      version: string;
+      installed: boolean;
+      size: number;
+      company: string;
+      description?: string;
+      supportOS: string;
+      requiredCpuCore: number;
+      requiredRam: number;
+      requiredStorage: number;
+      requiredNetwork: number;
+    }
+  > {
+    return this.procuctRepository.deleteServerForProduct(id);
+  } 
+  
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IServer> {
+    return this.procuctRepository.updateServerForProduct(productId, serverData);
   }
 
 
