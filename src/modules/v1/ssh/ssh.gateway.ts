@@ -16,6 +16,7 @@ import { ProductRepository } from 'src/database/repositories/product.repository'
 import { UseGuards } from '@nestjs/common';
 import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 import { IServer } from 'src/comman/types';
+import { skip } from 'rxjs';
 
 const filePath = 'example.txt';
 
@@ -23,7 +24,10 @@ interface Session {
     socket: Socket;
     shell: Channel | null;
     ptyTerm: pty.IPty | null;
-    skipFunc: (() => void) | null;
+    skipFunc: {
+        skipSlashNs: ((value: number) => void) | null
+        skipData: ((value: number) => void) | null
+    };
     // conn?: Client | null;
 }
 
@@ -123,8 +127,9 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         if (session) {
             // console.log(`${sessionId}: ${command}`);
             if (session.shell) {
+                session.skipFunc.skipSlashNs?.(1);
+                session.skipFunc.skipData?.(0);
                 session.shell.write(`${command}\n`);
-                session.skipFunc?.();
                 // session.shell.write(`${command} ; echo -e ${this.prompt}\n`);
             } else if (session.ptyTerm) {
                 session.ptyTerm.write(`${command}\n`);
@@ -173,19 +178,29 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             // socket.disconnect();
         });
 
-        this.sessions.set(sessionId, { socket, shell: null, ptyTerm: term, skipFunc: null  });//, clearLine: null });
+        this.sessions.set(sessionId, {
+            socket,
+            shell: null,
+            ptyTerm: term,
+            skipFunc: {
+                skipSlashNs: null,
+                skipData: null
+            }
+        });//, clearLine: null });
     }
 
 
     @SubscribeMessage('auto_complete')
     autoComplateCommand(socket: Socket, { sessionId, command }) {
         const session = this.sessions.get(sessionId);
-        command = command.split('\n').join(' && ');
+        // command = command.split('\n').join(' && ');
         if (session) {
             // console.log(`${sessionId}: ${command}`);
             if (session.shell) {
+                session.skipFunc.skipSlashNs?.(0);
+                session.skipFunc.skipData?.(2);
                 session.shell.write(`${command}`);
-                session.skipFunc?.();
+                // session.skipFunc.skipSlashNs?.(0);
                 // session.shell.write(`${command} ; echo -e ${this.prompt}\n`);
             } else if (session.ptyTerm) {
                 session.ptyTerm.write(`${command}`);
@@ -240,26 +255,42 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     conn.end();
                     socket.emit('error', { sessionId, message: err.message });
                 } else {
-                    let skipSlashNs = 2;
-                    this.sessions.set(sessionId, { socket, shell: stream, ptyTerm: null, skipFunc: () => { skipSlashNs = 2; } });
+                    let skipSlashNsCount = 1;
+                    let skipDataCount = 0;
+                    this.sessions.set(sessionId, {
+                        socket,
+                        shell: stream,
+                        ptyTerm: null,
+                        skipFunc: {
+                            skipSlashNs: (value) => { skipSlashNsCount = value; },
+                            skipData: (value) => { skipDataCount = value; }
+                        }
+                    });
+
+                    function _skipData(sessionId: string, output: string) {
+                        if (skipDataCount > 0) {
+                            skipDataCount--;
+                            return;
+                        } else {
+                            socket.emit('data', { sessionId, output });
+                        }
+                    }
 
                     stream.on('data', (data: Buffer) => {
                         const output = data.toString();
                         // socket.emit('data', { sessionId, output });
                         console.log('outputt', output);
-                        if (false && skipSlashNs > 0) {
+                        if (skipSlashNsCount > 0) {
                             if (output.includes('\n')) {
                                 const resposes = output.split('\n');
-                                console.log('resposes:', resposes);
-                                console.log('skipSlashNs:', skipSlashNs);
-                                if (resposes.length > skipSlashNs) {
-                                    skipSlashNs = 0;
-                                    const respose = resposes.slice(skipSlashNs).join('\n');
-                                    socket.emit('data', { sessionId, output: respose });
+                                if (resposes.length > skipSlashNsCount) {
+                                    const respose = resposes.slice(skipSlashNsCount).join('\n');
+                                    skipSlashNsCount = 0;
+                                    _skipData(sessionId, respose);
                                 } else {
                                     // console.log('skipSlashNs:', skipSlashNs);
                                     // console.log
-                                    skipSlashNs -= (resposes.length - 1);
+                                    skipSlashNsCount -= (resposes.length - 1);
                                 }
                                 // const lastIndex = output.lastIndexOf('\n');
                                 // socket.emit('data', { sessionId, output: `${_line}${output.slice(0, lastIndex)}` });
@@ -267,7 +298,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                                 // _line = output.slice(lastIndex + 1);   
                             }
                         } else {
-                            socket.emit('data', { sessionId, output });
+                            _skipData(sessionId, output);
+                            // socket.emit('data', { sessionId, output });
                         }
                     });
 
