@@ -7,7 +7,7 @@ import {
 import { WsException } from '@nestjs/websockets';
 
 import { Knex } from 'knex';
-import { IProduct, IServer } from 'src/comman/types';
+import { IMessage, IProduct, IServer } from 'src/comman/types';
 
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
@@ -167,7 +167,7 @@ export class ProductRepository {
     // };
   }
 
-  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IServer> {
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IMessage> {
     const result: IServer[] = await this.knex('servers')
       .update(serverData)
       .where('id', function () {
@@ -181,7 +181,10 @@ export class ProductRepository {
       throw new HttpException('Server or Product not found', HttpStatus.NOT_FOUND);
     }
 
-    return result[0];
+    return {
+      status: 'success',
+      message: 'Server updated successfully',
+    };
   }
 
   async getServerCredentials(productId: string): Promise<IServer> {

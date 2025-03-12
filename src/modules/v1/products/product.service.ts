@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { IProduct, IServer } from 'src/comman/types';
+import { IMessage, IProduct, IServer } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from '../ssh/dto/dtos';
 
@@ -67,7 +67,7 @@ export class ProductsService {
     return this.procuctRepository.deleteServerForProduct(id);
   } 
   
-  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IServer> {
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IMessage> {
     return this.procuctRepository.updateServerForProduct(productId, serverData);
   }
 

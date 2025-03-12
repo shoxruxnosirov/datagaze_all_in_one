@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
 import { ProductsService } from './product.service';
-import { IProduct, Role } from 'src/comman/types';
+import { IMessage, IProduct, Role } from 'src/comman/types';
 // import { SshConnection } from '../ssh/ssh.connection';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
@@ -98,7 +98,7 @@ export class ProductsController {
   async updateServerForProduct(
     @Param('productId') productId: string,
     @Body() serverData: ConnectDto
-  ) {
+  ): Promise<IMessage> {
     return this.productsService.updateServerForProduct(productId, serverData);
   }
 
