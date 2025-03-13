@@ -60,15 +60,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async handleDisconnect(socket: Socket) {
         console.log(`Client uzildi: ${socket.id}`);
 
-        // for (const [key, session] of this.sessions) {
-        //     if (session.socket === socket) {
-        //         session.shell?.end();
-        //         session.ptyTerm?.kill();
-        //         session.conn?.end();
-        //         this.sessions.delete(key);
-        //         break;
-        //     }
-        // }
+        for (const [key, session] of this.sessions) {
+            if (session.socket === socket) {
+                session.shell?.end();
+                session.ptyTerm?.kill();
+                this.sessions.delete(key);
+                break;
+            }
+        }
     }
 
     @SubscribeMessage('open_own_terminal')
@@ -161,8 +160,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
         const term = pty.spawn(shell, [], {
             name: 'xterm-color',
-            cols: 100,
-            rows: 30,
+            cols: 80,
+            rows: 20,
             cwd: process.env.HOME,
             env: process.env,
         });
@@ -196,8 +195,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         conn.shell(
             {
                 term: 'xterm',
-                cols: 100,
-                rows: 30,
+                cols: 80,
+                rows: 20,
                 echo: false,
                 pty: false,
                 env: { LANG: 'en_US.UTF-8' },

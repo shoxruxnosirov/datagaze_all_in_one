@@ -48,7 +48,7 @@
 <body>
     <!-- Deploy Form -->
     <div>
-        <input type="text" id="productId" placeholder="Product ID" , value="3036a0b6-bd5b-4dc8-8edd-62c72be866ec"><br>
+        <input type="text" id="productId" placeholder="Product ID" value="a1a219a0-f7a4-4e19-b9de-49deaadc9ee6"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
         <input type="text" id="port" placeholder="Port" value="22"><br>
         <input type="text" id="username" placeholder="Username" value="root"><br>
@@ -58,7 +58,8 @@
     <br>
     <!-- Go to Server Form -->
     <div>
-        <input type="text" id="serverProductId" placeholder="Product ID"><br>
+        <input type="text" id="serverProductId" placeholder="Product ID"
+            value="a1a219a0-f7a4-4e19-b9de-49deaadc9ee6"><br>
         <button onclick="goToServer()">Go To Server</button>
     </div>
     <br>
@@ -74,7 +75,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://localhost:3004', {
+                socket = io('ws://18.116.24.103:3004', {
                     extraHeaders: {
                         transports: ['websocket'],
                         // Authorization: `Bearer ${sean.jwtToken}`,
@@ -88,6 +89,10 @@
 
                 socket.on('disconnect', () => {
                     console.log('Disconnected from server');
+                    this.terminals.forEach((terminal, sessionId) => {
+                        document.getElementById(sessionId)?.remove();
+                    });
+                    this.terminals.clear();
                     socket = null;
                 });
 
@@ -100,34 +105,20 @@
                     // const terminal = terminals.get(sessionId).term;
                     document.getElementById(sessionId)?.remove();
                     terminals.delete(sessionId);
+                    if (terminals.size === 0) {
+                        socket.disconnect();
+                    }
                 });
 
                 socket.on('data', ({ sessionId, output }) => {
                     const termObj = terminals.get(sessionId);
-                    console.log('outputttt: ', output);
-                    // console.log('Connected to server');
-                    if (termObj.getIsAutoComplete()) {
-                        if(output !== '\u0007'){
-                            termObj.auto_complate(output);
-                            terminals.get(sessionId)?.term.write(output);
-                        }
-                        return;
-                    }
-                    // console.log('data sessionId: ', sessionId);
-                    terminals.get(sessionId)?.term.write(output);
-                    // console.log(term);
+                    terminals.get(sessionId)?.write(output);
                 });
-
-                // socket.on('auto_complete', ({ sessionId, command }) => {
-
-                //     console.log('auto_complete sessionId: ', sessionId);
-                //     console.log('auto_complete command: ', command);
-                //     // term.write(command); // Backenddan kelgan natijani ekranga chiqarish
-                // });
 
                 // socket.on('alert', () => {
                 //     console.log('Connected to server');
                 // });
+
                 // socket.on('error', () => {
                 //     console.log('Connected to server');
                 // });
@@ -162,27 +153,14 @@
 
             let term = new Terminal({
                 cursorBlink: true,     // Blinking cursor
-                rows: 16,              // Qatorlar soni
-                cols: 120,              // Ustunlar soni
+                rows: 20,              // Qatorlar soni
+                cols: 80,              // Ustunlar soni
                 fontSize: 14,          // Font hajmi
                 theme: { background: "#000000" } // Qora fon
             });
             term.open(terminalDiv);
 
-            let inputBuffer = '';
-            isAutoComplete = false;
-            terminals.set(
-                sessionId, 
-                {
-                    term,
-                    auto_complate: value => inputBuffer += value,
-                    getIsAutoComplete: () => {
-                        const tmp = isAutoComplete;
-                        isAutoComplete = false;
-                        return tmp;
-                    },
-                }
-            ); 
+            terminals.set(sessionId, term);
 
             term.onData(data => {
                 socket.emit('command', { sessionId, command: data });
@@ -195,12 +173,6 @@
             let terminalDiv = document.querySelector(`#${id} .terminal`);
             terminalDiv.style.display = terminalDiv.style.display === "none" ? "block" : "none";
         }
-
-        // // Terminalni yopish
-        // function closeTerminal(id) {
-        //     document.getElementById(id).remove();
-        //     delete terminals[id]; // Terminal obyektini o‘chirish
-        // }
 
         function deploy() {
             initSocket();
@@ -232,8 +204,11 @@
 
         function openOwnTerminal() {
             initSocket();
-            const data = { type: 'own_terminal' };
-            socket.emit('own_terminal', data);
+            socket.emit('open_own_terminal', null);
+        }
+
+        function closeTerminal(sessionId) {
+            socket.emit('close_terminal', { sessionId });
         }
     </script>
 </body>
