@@ -12,7 +12,7 @@ import { Client, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2';
 import { Socket } from 'socket.io';
 
 import { IMessage, IServer } from 'src/comman/types';
-import { ConnectDto } from './dto/dtos';
+import { ConnectDto } from '../dto/dtos';
 import { Response } from 'express';
 import { Readable } from 'stream';
 import { WsException } from '@nestjs/websockets';

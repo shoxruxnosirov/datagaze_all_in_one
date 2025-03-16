@@ -12,12 +12,12 @@ const db = Knex(knexConfig);
 
     await db.schema.dropTableIfExists('products');
     await db.schema.dropTableIfExists('Products');
-    
+
     await db.schema.dropTableIfExists('servers');
     await db.schema.dropTableIfExists('Servers');
-    
+
     const SUPERADMIN_PASSWORD: string = await bcrypt.hash('superadmin', 10);
-    
+
     await db.schema.createTable('admins', function (table) {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table
@@ -120,10 +120,61 @@ const db = Knex(knexConfig);
       firstUploadAt: null,
       lastUploadAt: null,
     });
-    
 
-    
 
+      await  db.schema.createTable("computers", (table) => {
+        table.increments("id").primary();
+        table.string("hostname").notNullable();
+        table.string("operation_system").notNullable();
+        table.string("platform").notNullable();         // os platform
+        table.string("build_number").notNullable();     // os build number
+        table.string("version").notNullable();          // os version
+        table.integer("ram").notNullable();
+        table.string("cpu").notNullable();
+        table.string("model").notNullable();            // cpu model
+        table.integer("cores").notNullable();           // cpu cores
+        table.jsonb("network_adapters").notNullable(); // JSONB ustun
+        table.jsonb("disks").notNullable(); // JSONB ustun
+        table.timestamp("created_at").defaultTo(db.fn.now());
+    });
+
+    await db.schema.createTable("computers", (table) => {
+      table.increments("id").primary();
+
+      table.string("hostname").notNullable();
+      table.string("platform").notNullable();
+      table.string("operation_system").notNullable();
+      table.string("build_number");
+      table.string("version");
+
+      table.string("cpu");
+      table.integer("cores");
+      table.string("model");
+
+      table.string("nic_name");
+      table.string("ip_address");
+      table.string("mac_address");
+      table.boolean("available").defaultTo(false);
+
+      table.bigInteger("ram");
+      // table.bigInteger("freeRAM");
+      table.bigInteger("totalDiskD");
+      table.bigInteger("freeDiskD");
+      table.bigInteger("totalDiskC");
+      table.bigInteger("freeDiskC");
+
+      table.timestamps(true, true);
+    });
+
+
+    await db.schema.createTable("applications", (table) => {
+      table.increments("id").primary();
+      table.integer("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
+      table.string("name").notNullable();
+      table.bigInteger("size").notNullable();
+      table.string("type").notNullable();
+      table.timestamp("installedAt").defaultTo(db.fn.now());
+    });
 
     await db.destroy();
 

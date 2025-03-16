@@ -9,7 +9,7 @@ import { IMessage, IProduct, IServer } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from './dto/dtos';
 
-import { SshGateway } from './ssh.gateway';
+import { SshGateway } from './terminal/ssh.gateway';
 
 @Injectable()
 export class SshService {
@@ -17,17 +17,18 @@ export class SshService {
     constructor(
         private sshRepository: SshRepository,
         private connectServer: SshConnection,
+        private productRepository: ProductRepository
         // private sshGateway: SshGateway
-        // private productRepository: ProductRepository
     ) { }
 
     async deployProject(config: {
-        localProjectPath: string;
+        productId: string;
         // remoteProjectPath: string;
         // startCommand: string;
         serverCredentials: ConnectDto
     }, res: Response) {
-        await this.connectServer.deployProject(config, res);
+        const { fileUrl } = await this.productRepository.getProductForDeploy(config.productId);
+        await this.connectServer.deployProject({localProjectPath: fileUrl, serverCredentials: config.serverCredentials}, res);
         const newServer: IServer = await this.sshRepository.storeSshCredentials(config.serverCredentials);
         return newServer;
     }

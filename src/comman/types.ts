@@ -1,5 +1,3 @@
-import { Request } from '@nestjs/common';
-
 import Knex from 'knex';
 
 export interface ITokens {
@@ -31,6 +29,15 @@ export interface IAdmin extends Knex.QueryBuilder {
   email: string;
   role: Role;
   password: string;
+  createdAt: Date;
+}
+export interface IAdmin2 extends Knex.QueryBuilder {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  // role: Role;
+  // password: string;
   createdAt: Date;
 }
 
@@ -68,7 +75,7 @@ export interface IGuardRequest extends Request {
 // export interface IProduct {
 //   id: string;
 //   name: string;
-//   icon?: string;
+//   icon: string;
 //   version: string;
 //   fileUrl: string;
 //   size: number;
@@ -84,7 +91,7 @@ export interface IGuardRequest extends Request {
 export interface IProduct {
   id: string;
   name: string;
-  icon?: string;
+  icon: string;
   version: string;
   fileUrl: string;
   downloadPath: string;
@@ -103,7 +110,3 @@ export interface IProduct {
 }
 
 
-// export interface IProductData {
-//   filePath: string;
-//   filename: string;
-// }

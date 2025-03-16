@@ -11,7 +11,7 @@ import { Client, Channel, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2
 import { randomUUID } from 'crypto';
 import * as pty from 'node-pty';
 import { SshGatewayConnection } from './ssh.gatewayService';
-import { ConnectDto } from './dto/dtos';
+import { ConnectDto } from '../dto/dtos';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { UseGuards } from '@nestjs/common';
 import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
@@ -37,7 +37,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private sshGatewayConn: SshGatewayConnection,
-        private procuctRepository: ProductRepository
+        private productRepository: ProductRepository
     ) { }
 
     private sessions = new Map<string, Session>();
@@ -58,14 +58,15 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     async handleDisconnect(socket: Socket) {
-        console.log(`Client uzildi: ${socket.id}`);
+        console.log(`SocketClient uzildi: ${socket.id}`);
 
         for (const [key, session] of this.sessions) {
             if (session.socket === socket) {
                 session.shell?.end();
                 session.ptyTerm?.kill();
                 this.sessions.delete(key);
-                break;
+                console.log('session.size: ', this.sessions.size);
+                // break;
             }
         }
     }
@@ -73,7 +74,17 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('open_own_terminal')
     openTerminal(socket: Socket) {
         const sessionId = randomUUID(); // Unikal ID yaratish
-        this.connectBackEndTerm(socket, sessionId);
+        const session = {
+            socket,
+            shell: null,
+            ptyTerm: null,
+            skipFunc: {
+                skipSlashNs: null,
+                skipData: null
+            }
+        }
+        this.connectBackEndTerm(socket, sessionId, session);
+        this.sessions.set(sessionId, session);
         socket.emit('open_terminal', { sessionId });
     }
 
@@ -83,7 +94,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         config: { productId: string; serverCredentials: ConnectDto },
     ) {
         const sessionId = randomUUID(); // Unikal ID yaratish
-        const { fileUrl } = await this.procuctRepository.getProductForDeploy(config.productId);
+        const { fileUrl } = await this.productRepository.getProductForDeploy(config.productId);
         const conn: Client = new Client();
         await this.sshGatewayConn.deployProject(
             {
@@ -95,7 +106,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             sessionId
         );
         try {
-            this.procuctRepository.addServerAndUpdateProduct(config.serverCredentials, config.productId);
+            this.productRepository.addServerAndUpdateProduct(config.serverCredentials, config.productId);
         } catch (error) {
             socket.emit('error', { sessionId, message: error.message });
             console.log('error', error);
@@ -107,7 +118,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('ssh_connect')
     async handleConnect(socket: Socket, data: { productId: string }) {
 
-        const server: IServer = await this.procuctRepository.getServerCredentials(data.productId);
+        const server: IServer = await this.productRepository.getServerCredentials(data.productId);
         const sessionId = randomUUID();
         const conn = new Client();
 
@@ -156,7 +167,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-    private connectBackEndTerm(socket: Socket, sessionId: string) {
+    private connectBackEndTerm(socket: Socket, sessionId: string, session: Session) {
         const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
         const term = pty.spawn(shell, [], {
             name: 'xterm-color',
@@ -168,28 +179,29 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
         term.onData((data) => {
-            console.log(data.toString());
+            // console.log(data.toString());
             socket.emit('data', { sessionId, output: data.toString() });
         });
 
         term.onExit(({ exitCode, signal }) => {
             console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
             socket.emit('closed_terminal', { sessionId, exitCode, signal });
+            term?.kill();
             this.sessions.delete(sessionId);
-
-            // socket.disconnect();
         });
 
-        this.sessions.set(sessionId, {
-            socket,
-            shell: null,
-            ptyTerm: term,
-            skipFunc: {
-                skipSlashNs: null,
-                skipData: null
-            }
-        });//, clearLine: null });
-    }     
+        session.ptyTerm = term;
+
+        // this.sessions.set(sessionId, {
+        //     socket,
+        //     shell: null,
+        //     ptyTerm: term,
+        //     skipFunc: {
+        //         skipSlashNs: null,
+        //         skipData: null
+        //     }
+        // });//, clearLine: null });
+    }
 
     private connectShell(socket: Socket, conn: Client, sessionId: string) {
         conn.shell(
@@ -208,15 +220,16 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 } else {
                     let skipSlashNsCount = 1;
                     let skipDataCount = 0;
-                    this.sessions.set(sessionId, {
+                    const session = {
                         socket,
                         shell: stream,
                         ptyTerm: null,
                         skipFunc: {
-                            skipSlashNs: (value) => { skipSlashNsCount = value; },
-                            skipData: (value) => { skipDataCount = value; }
+                            skipSlashNs: (value:number) => { skipSlashNsCount = value; },
+                            skipData: (value: number) => { skipDataCount = value; }
                         }
-                    });
+                    }
+                    this.sessions.set(sessionId, session);
 
                     function _skipData(sessionId: string, output: string) {
                         if (skipDataCount > 0) {
@@ -230,7 +243,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     stream.on('data', (data: Buffer) => {
                         const output = data.toString();
                         // socket.emit('data', { sessionId, output });
-                        console.log('outputt', output);
                         if (skipSlashNsCount > 0) {
                             if (output.includes('\n')) {
                                 const resposes = output.split('\n');
@@ -258,9 +270,10 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
                     stream.on('close', () => {
                         // this.sessions.delete(sessionId);
+                        session.shell = null;
                         socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
                         conn.end();
-                        this.connectBackEndTerm(socket, sessionId);
+                        this.connectBackEndTerm(socket, sessionId, session);
                     });
 
                     socket.emit('alert', { sessionId, message: 'ssh Terminal ochildi' });

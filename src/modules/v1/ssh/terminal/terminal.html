@@ -48,7 +48,7 @@
 <body>
     <!-- Deploy Form -->
     <div>
-        <input type="text" id="productId" placeholder="Product ID" value="a1a219a0-f7a4-4e19-b9de-49deaadc9ee6"><br>
+        <input type="text" id="productId" placeholder="Product ID" value="93d55ad2-8279-439a-8a25-d1fcf6c66440"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
         <input type="text" id="port" placeholder="Port" value="22"><br>
         <input type="text" id="username" placeholder="Username" value="root"><br>
@@ -59,7 +59,7 @@
     <!-- Go to Server Form -->
     <div>
         <input type="text" id="serverProductId" placeholder="Product ID"
-            value="a1a219a0-f7a4-4e19-b9de-49deaadc9ee6"><br>
+            value="93d55ad2-8279-439a-8a25-d1fcf6c66440"><br>
         <button onclick="goToServer()">Go To Server</button>
     </div>
     <br>
@@ -75,7 +75,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://18.116.24.103:3004', {
+                socket = io('ws://localhost:3004', { // 192.168.1.103, 18.116.24.103
                     extraHeaders: {
                         transports: ['websocket'],
                         // Authorization: `Bearer ${sean.jwtToken}`,
@@ -89,10 +89,10 @@
 
                 socket.on('disconnect', () => {
                     console.log('Disconnected from server');
-                    this.terminals.forEach((terminal, sessionId) => {
-                        document.getElementById(sessionId)?.remove();
+                    terminals.forEach((terminal, sessionId) => {
+                        document.getElementById(`ter_${sessionId}`)?.remove();
                     });
-                    this.terminals.clear();
+                    terminals.clear();
                     socket = null;
                 });
 
@@ -101,9 +101,10 @@
                     openNewTerminal(sessionId);
                 });
 
-                socket.on('closed_teminal', ({ sessionId }) => {
+                socket.on('closed_terminal', ({ sessionId }) => {
+                    console.log('closed_teminal sessionId: ', sessionId);
                     // const terminal = terminals.get(sessionId).term;
-                    document.getElementById(sessionId)?.remove();
+                    document.getElementById(`ter_${sessionId}`)?.remove();
                     terminals.delete(sessionId);
                     if (terminals.size === 0) {
                         socket.disconnect();
@@ -131,7 +132,7 @@
             let terminalId = sessionId; // Unikal ID yaratamiz
             let terminalWrapper = document.createElement('div');
             terminalWrapper.className = "terminal-wrapper";
-            terminalWrapper.id = terminalId;
+            terminalWrapper.id = "ter_" + terminalId;
 
             // Terminal sarlavhasi (title)
             let terminalTitle = document.createElement('div');
@@ -155,7 +156,7 @@
                 cursorBlink: true,     // Blinking cursor
                 rows: 20,              // Qatorlar soni
                 cols: 80,              // Ustunlar soni
-                fontSize: 14,          // Font hajmi
+                fontSize: 12,          // Font hajmi
                 theme: { background: "#000000" } // Qora fon
             });
             term.open(terminalDiv);
@@ -170,7 +171,7 @@
 
         // Terminalni ochish yoki yopish
         function toggleTerminal(id) {
-            let terminalDiv = document.querySelector(`#${id} .terminal`);
+            let terminalDiv = document.querySelector(`#ter_${id} .terminal`);
             terminalDiv.style.display = terminalDiv.style.display === "none" ? "block" : "none";
         }
 

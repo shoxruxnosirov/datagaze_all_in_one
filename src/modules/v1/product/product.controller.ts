@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, ParseUUIDPipe } from '@nestjs/common';
 import { ProductsService } from './product.service';
 import { IMessage, IProduct, Role } from 'src/comman/types';
 // import { SshConnection } from '../ssh/ssh.connection';
@@ -19,7 +19,6 @@ export class ProductsController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Get all products' })
   @ApiBearerAuth()
-
   async getAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
     return this.productsService.findAll();
   }
@@ -31,7 +30,7 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async getOne(
-    @Param('id') id: string
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string
   ): Promise<
     {
       id: string;
@@ -68,24 +67,24 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async deleteServerForProduct(
-    @Param('productId') id: string
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
   ): Promise<
-  {
-    id: string;
-    name: string;
-    icon?: string;
-    version: string;
-    installed: boolean;
-    size: number;
-    company: string;
-    description?: string;
-    supportOS: string;
-    requiredCpuCore: number;
-    requiredRam: number;
-    requiredStorage: number;
-    requiredNetwork: number;
-  }
->  {
+    {
+      id: string;
+      name: string;
+      icon?: string;
+      version: string;
+      installed: boolean;
+      size: number;
+      company: string;
+      description?: string;
+      supportOS: string;
+      requiredCpuCore: number;
+      requiredRam: number;
+      requiredStorage: number;
+      requiredNetwork: number;
+    }
+  > {
     return this.productsService.deleteServerForProduct(id);
   }
 
@@ -95,8 +94,19 @@ export class ProductsController {
   @ApiOperation({ summary: 'Update server for product' })
   @ApiBearerAuth()
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        host: { default: '34.203.244.210', type: 'string', description: 'server host' },
+        port: { default: '22', type: 'string', description: 'server port' },
+        username: { default: 'ubuntu', type: 'string', description: 'server username' },
+        password: { default: 'New_admin_pass_123', type: 'string', description: 'server password' },
+      }
+    },
+  })
   async updateServerForProduct(
-    @Param('productId') productId: string,
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
     @Body() serverData: ConnectDto
   ): Promise<IMessage> {
     return this.productsService.updateServerForProduct(productId, serverData);
@@ -108,7 +118,7 @@ export class ProductsController {
   // }
 
   // @Put(':id')
-  // async update(@Param('id') id: string, @Body() productData: Product): Promise<Product> {
+  // async update(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Body() productData: Product): Promise<Product> {
   //   return this.productsService.update(id, productData);
   // }
 
@@ -118,7 +128,7 @@ export class ProductsController {
   // @ApiOperation({ summary: 'Delete procuct' })
   // @ApiBearerAuth()
   // @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
-  // async delete(@Param('id') id: string): Promise<Product> {
+  // async delete(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string): Promise<Product> {
   //   return this.productsService.delete(id);
   // }
 }

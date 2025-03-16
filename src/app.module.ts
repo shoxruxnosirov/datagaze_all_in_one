@@ -3,18 +3,20 @@ import { KnexModule } from 'nestjs-knex';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AdminModule } from './modules/v1/admins/admin.module';
+import { AdminModule } from './modules/v1/admin/admin.module';
 import { SshModule } from './modules/v1/ssh/ssh.module';
-import { ProductsModule } from './modules/v1/products/product.module';
-import { SshGateway } from './modules/v1/ssh/ssh.gateway';
-import { SshGatewayConnection } from './modules/v1/ssh/ssh.gatewayService';
+import { ProductsModule } from './modules/v1/product/product.module';
+import { SshGateway } from './modules/v1/ssh/terminal/ssh.gateway';
+import { SshGatewayConnection } from './modules/v1/ssh/terminal/ssh.gatewayService';
 import knexConfig from 'src/config/database.config';
+import { ComputersModule } from './modules/v1/computer/copmuter.module';
 
 @Module({
   imports: [
     AdminModule,
     SshModule,
     ProductsModule,
+    ComputersModule,
     KnexModule.forRoot({
       config: {
         client: knexConfig.client, 

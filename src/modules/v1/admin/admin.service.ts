@@ -8,25 +8,22 @@ import {
   REFRESH_TOKEN_EXPIRATION,
   REFRESH_TOKEN_SECRET,
 } from 'src/config/env';
-import {
-  CreateAdminDto,
-  LoginAdminDto,
-  UpdateAdminPasswordDto,
-  UpdateAdminProfileDto,
-} from 'src/modules/v1/admins/dto/dtos';
+import { UpdateAdminPasswordBySuperadminoDto, UpdateAdminPasswordDto, UpdateAdminProfileDto, } from 'src/modules/v1/admin/dto/update';
 import { IMessage, IMessageforLogin, IPayload, ITokens } from 'src/comman/types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 import { Role } from 'src/comman/guards/roles.enum';
+import { CreateAdminDto } from './dto/register';
+import { LoginAdminDto } from './dto/login';
+import { request } from 'express';
 
 @Injectable()
 export class AdminService {
   constructor(
     private jwtService: JwtService,
     private readonly adminRepository: AdminRepository,
-  ) {}
+  ) { }
 
   async createAdmin(createAdminDto: CreateAdminDto): Promise<IMessage> {
-    // const admin =
     await this.adminRepository.createAdmin(createAdminDto);
 
     return {
@@ -36,77 +33,45 @@ export class AdminService {
   }
 
   async login(adminDto: LoginAdminDto): Promise<IMessageforLogin> {
-    try {
-      const admin = await this.adminRepository.loginAdmin(adminDto);
-      if (admin) {
-        const payload: IPayload = {
-          id: admin.id,
-          role: admin.role,
-        };
-        return {
-          status: 'success',
-          token: this.createAccessToken(payload),
-          refreshToken: this.createRefreshToken(payload),
-        };
-      } else {
-        throw new HttpException(
-          {
-            status: 'error',
-            message: 'Invalid username or password',
-          },
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
-    } catch (err) {
+    const admin = await this.adminRepository.loginAdmin(adminDto);
+    if (admin) {
+      const payload: IPayload = {
+        id: admin.id,
+        role: admin.role,
+      };
+      return {
+        status: 'success',
+        token: this.createAccessToken(payload),
+        refreshToken: this.createRefreshToken(payload),
+      };
+    } else {
       throw new HttpException(
         {
           status: 'error',
-          message: 'Invalid username or password: ' + err.message,
+          message: 'Invalid username or password',
         },
         HttpStatus.UNAUTHORIZED,
       );
     }
   }
 
+  async getAllAdmins() {
+    return this.adminRepository.getAllAdmins();
+  }
+
+  async getOneAdmin(id: string) {
+    return this.adminRepository.getOneAdmin(id);
+  }
+
   async updatePassword(data: {
-    id: string;
-    updatePassData: UpdateAdminPasswordDto;
-    admin: IPayload;
+    updatePassData: UpdateAdminPasswordDto
+    admin: IPayload
   }): Promise<IMessage> {
-    if (data.admin.role === Role.SUPER_ADMIN) {
-      if ('userId' in data.updatePassData) {
-        return await this.adminRepository.updatePasswordBySuperadmin(data.updatePassData);
-      } else if ('oldPassword' in data.updatePassData) {
         return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
-      } else {
-        throw new HttpException(
-          {
-            status: 'error',
-            message:
-              'Superadmin can only update password using user_id OR Old password required to update password',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } else if (data.admin.role === Role.ADMIN) {
-      if ('oldPassword' in data.updatePassData) {
-        return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
-      } else {
-        throw new HttpException(
-          {
-            status: 'error',
-            message: 'Old password required to update password',
-          },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    } else {
-      // hozircha turib tursinchi
-      return {
-        status: 'success',
-        message: 'bu qanday foydalanuvchi ekana',
-      };
-    }
+  }
+
+  async updateAdminPasswordBySuperadmin(data: UpdateAdminPasswordBySuperadminoDto): Promise<IMessage> {
+        return this.adminRepository.updatePasswordBySuperadmin(data);
   }
 
   async updateProfile(data: {
@@ -120,6 +85,10 @@ export class AdminService {
     //   status: 'success',
     //   message: 'Profile updated successfully.',
     // };
+  }
+
+  async deleteAdminBySuperadmin(id): Promise<IMessage> {
+    return this.adminRepository.deleteAdminBySuperadmin(id)
   }
 
   refreshTokens(refreshToken: string, admin: IPayload): ITokens {
