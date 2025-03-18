@@ -27,7 +27,7 @@ export class ComputerRepository {
     const offset = (page - 1) * pageSize;
 
     const applications: (IApplication & { total_records: number })[] = await this.knex("applications")
-      .select("id", "computerId", "name", "size", "type", "installed_date")
+      .select("computerId", "version", "name", "size", "type", "installed_date")
       .where("computerId", computerId)
       .orderBy("installed_date", "desc")
       .limit(pageSize)
@@ -83,25 +83,10 @@ export class ComputerRepository {
   }
 
   async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ id: string, status: string }[]> {
-    // const result = await this.knex('applications')
-    //   .insert(applications)
-    //   .onConflict(['computerId', 'remoteId'])
-    //   .merge({
-    //     name: this.knex.raw('EXCLUDED.name'),
-    //     size: this.knex.raw('EXCLUDED.size'),
-    //     type: this.knex.raw('EXCLUDED.type'),
-    //     // installedAt: this.knex.raw('EXCLUDED.installedAt')
-    //   })
-    //   // .where('computerId', computerId)
-    //   .whereRaw('"applications"."computerId" = EXCLUDED."computerId" AND "applications"."remoteId" = EXCLUDED."remoteId"')
-    //   .returning([
-    //     this.knex.raw('"remoteId" AS id'),
-    //     this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
-    //   ]);
 
     const result = await this.knex('applications')
       .insert(applications)
-      .onConflict(['computerId', 'remoteId'])
+      .onConflict(['computerId', 'name'])
       .merge({
         name: this.knex.raw('EXCLUDED.name'),
         size: this.knex.raw('EXCLUDED.size'),
@@ -109,7 +94,7 @@ export class ComputerRepository {
         // installedAt: this.knex.raw('EXCLUDED.installedAt')
       })
       .returning([
-        this.knex.raw('"remoteId" AS id'),
+        'name',
         this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
       ]);
 

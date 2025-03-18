@@ -26,14 +26,19 @@ export class AgentsController {
   async applicationRegister(@Body() applications: ApplicationDto[], @Req() req: IRequestAgent, @Res() res: Response): Promise<Response> {
 
     console.log('computer: ', req.agent);
-    applications.forEach(app => {
-      app.remoteId = app.id;
+
+    const uniqueApps = Array.from(new Map(applications.map(app => {
       app.computerId = req.agent.computerId;
       delete app.id;
-    });
-    console.log('applications: ', applications);
+      return [app.name, app];
+    })).values());
 
-    const result = await this.agentsService.applicationRegister(applications, req.agent.computerId);
+    // uniqueApps.forEach(app => {
+    //   app.computerId = req.agent.computerId;
+    // });
+    // console.log('applications: ', applications);
+
+    const result = await this.agentsService.applicationRegister(uniqueApps, req.agent.computerId);
 
     return res.status(200).json(result);
   }

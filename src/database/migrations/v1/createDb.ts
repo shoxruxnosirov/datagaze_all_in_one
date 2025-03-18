@@ -136,70 +136,28 @@ const db = Knex(knexConfig);
         table.string("key").notNullable().unique();
         table.string("hostname").notNullable();
         table.string("operation_system").notNullable();
-        table.string("platform").notNullable();         // os platform
-        table.string("build_number").notNullable();     // os build number
-        table.string("version").notNullable();          // os version
+        table.string("platform").notNullable();       
+        table.string("build_number").nullable();     
+        table.string("version").notNullable();          
         table.integer("ram").notNullable();
         table.string("cpu").notNullable();
-        table.string("model").notNullable();            // cpu model
-        table.integer("cores").notNullable();           // cpu cores
-        table.jsonb("network_adapters").notNullable(); // JSONB ustun
-        table.jsonb("disks").notNullable(); // JSONB ustun
+        table.string("model").notNullable();            
+        table.integer("cores").notNullable();          
+        table.jsonb("network_adapters").notNullable();
+        table.jsonb("disks").notNullable(); 
         table.timestamp("created_at").defaultTo(db.fn.now());
     });
 
-    // await db.schema.createTable("computers", (table) => {
-    //   table.increments("id").primary();
-
-    //   table.string("hostname").notNullable();
-    //   table.string("platform").notNullable();
-    //   table.string("operation_system").notNullable();
-    //   table.string("build_number");
-    //   table.string("version");
-
-    //   table.string("cpu");
-    //   table.integer("cores");
-    //   table.string("model");
-
-    //   table.string("nic_name");
-    //   table.string("ip_address");
-    //   table.string("mac_address");
-    //   table.boolean("available").defaultTo(false);
-
-    //   table.bigInteger("ram");
-    //   // table.bigInteger("freeRAM");
-    //   table.bigInteger("totalDiskD");
-    //   table.bigInteger("freeDiskD");
-    //   table.bigInteger("totalDiskC");
-    //   table.bigInteger("freeDiskC");
-
-    //   table.timestamps(true, true);
-    // });
-    
-
-    // await db.schema.createTable("applications", (table) => {
-    //   table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
-    //   table.string("remoteId").notNullable();
-    //   table.uuid("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
-    //   table.string("name").notNullable();
-    //   table.string("version").notNullable()
-    //   table.timestamp("installed_date").defaultTo(db.fn.now());
-    //   table.string("type").notNullable();
-    //   table.bigInteger("size").notNullable();
-    // });
-
     await db.schema.createTable("applications", (table) => {
-      table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
-      table.string("remoteId").notNullable();
+      // table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.uuid("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
-      table.string("name").notNullable();
-      table.string("version").notNullable();
+      table.string("name").nullable();
+      table.string("version").nullable();
       table.timestamp("installed_date").defaultTo(db.fn.now());
-      table.string("type").notNullable();
-      table.bigInteger("size").notNullable();
+      table.string("type").nullable();
+      table.integer("size").nullable();
     
-      // ✅ UNIQUE constraint qo‘shildi
-      table.unique(["computerId", "remoteId"]);
+      table.unique(["computerId", "name"]);
     });
     
 
