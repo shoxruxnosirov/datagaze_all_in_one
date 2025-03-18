@@ -16,6 +16,15 @@ const db = Knex(knexConfig);
     await db.schema.dropTableIfExists('servers');
     await db.schema.dropTableIfExists('Servers');
 
+    await db.schema.dropTableIfExists('applications');
+    await db.schema.dropTableIfExists('Applications');
+
+    await db.schema.dropTableIfExists('computers');
+    await db.schema.dropTableIfExists('Computers');
+
+
+
+
     const SUPERADMIN_PASSWORD: string = await bcrypt.hash('superadmin', 10);
 
     await db.schema.createTable('admins', function (table) {
@@ -123,7 +132,8 @@ const db = Knex(knexConfig);
 
 
       await  db.schema.createTable("computers", (table) => {
-        table.increments("id").primary();
+        table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
+        table.string("key").notNullable().unique();
         table.string("hostname").notNullable();
         table.string("operation_system").notNullable();
         table.string("platform").notNullable();         // os platform
@@ -138,43 +148,60 @@ const db = Knex(knexConfig);
         table.timestamp("created_at").defaultTo(db.fn.now());
     });
 
-    await db.schema.createTable("computers", (table) => {
-      table.increments("id").primary();
+    // await db.schema.createTable("computers", (table) => {
+    //   table.increments("id").primary();
 
-      table.string("hostname").notNullable();
-      table.string("platform").notNullable();
-      table.string("operation_system").notNullable();
-      table.string("build_number");
-      table.string("version");
+    //   table.string("hostname").notNullable();
+    //   table.string("platform").notNullable();
+    //   table.string("operation_system").notNullable();
+    //   table.string("build_number");
+    //   table.string("version");
 
-      table.string("cpu");
-      table.integer("cores");
-      table.string("model");
+    //   table.string("cpu");
+    //   table.integer("cores");
+    //   table.string("model");
 
-      table.string("nic_name");
-      table.string("ip_address");
-      table.string("mac_address");
-      table.boolean("available").defaultTo(false);
+    //   table.string("nic_name");
+    //   table.string("ip_address");
+    //   table.string("mac_address");
+    //   table.boolean("available").defaultTo(false);
 
-      table.bigInteger("ram");
-      // table.bigInteger("freeRAM");
-      table.bigInteger("totalDiskD");
-      table.bigInteger("freeDiskD");
-      table.bigInteger("totalDiskC");
-      table.bigInteger("freeDiskC");
+    //   table.bigInteger("ram");
+    //   // table.bigInteger("freeRAM");
+    //   table.bigInteger("totalDiskD");
+    //   table.bigInteger("freeDiskD");
+    //   table.bigInteger("totalDiskC");
+    //   table.bigInteger("freeDiskC");
 
-      table.timestamps(true, true);
-    });
+    //   table.timestamps(true, true);
+    // });
+    
 
+    // await db.schema.createTable("applications", (table) => {
+    //   table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
+    //   table.string("remoteId").notNullable();
+    //   table.uuid("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
+    //   table.string("name").notNullable();
+    //   table.string("version").notNullable()
+    //   table.timestamp("installed_date").defaultTo(db.fn.now());
+    //   table.string("type").notNullable();
+    //   table.bigInteger("size").notNullable();
+    // });
 
     await db.schema.createTable("applications", (table) => {
-      table.increments("id").primary();
-      table.integer("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
+      table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
+      table.string("remoteId").notNullable();
+      table.uuid("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
       table.string("name").notNullable();
-      table.bigInteger("size").notNullable();
+      table.string("version").notNullable();
+      table.timestamp("installed_date").defaultTo(db.fn.now());
       table.string("type").notNullable();
-      table.timestamp("installedAt").defaultTo(db.fn.now());
+      table.bigInteger("size").notNullable();
+    
+      // ✅ UNIQUE constraint qo‘shildi
+      table.unique(["computerId", "remoteId"]);
     });
+    
 
     await db.destroy();
 

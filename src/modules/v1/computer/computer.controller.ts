@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe } from "@nestjs/common";
 import { ComputersService } from "./computer.service";
-import { Computer } from "./entities/computer.model";
+// import { Computer } from "./entities/computer.model";
 import { ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 
 @Controller("api/computers")
@@ -12,10 +12,10 @@ export class ComputersController {
     return this.computersService.getAllComputers();
   }
 
-  @Get(":id")
+  @Get(":computerId")
   @ApiParam({ name: "computerId", type: "string", required: true, description: "Kompyuterning ID si" })
-  getById(@Param("id", new ParseUUIDPipe({ version: '4' })) id: number) {
-    return this.computersService.getComputerById(id);
+  getById(@Param("computerId", new ParseUUIDPipe({ version: '4' })) computerId: number) {
+    return this.computersService.getComputerById(computerId);
   }
 
   @Get(":computerId/applications")

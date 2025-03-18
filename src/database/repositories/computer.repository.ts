@@ -1,8 +1,10 @@
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { Knex } from "knex";
 import { KNEX_CONNECTION } from "src/database/workWithDB/database.module";
-import { IApplication } from "src/modules/v1/computer/interface/application";
-import { IComputer } from "src/modules/v1/computer/interface/computer";
+import { ApplicationDto } from "src/modules/v1/agent/dto/application";
+import { CreateComputerDto } from "src/modules/v1/agent/dto/computer";
+import { IApplication } from "src/modules/v1/agent/interface/application";
+import { IComputer } from "src/modules/v1/agent/interface/computer";
 
 @Injectable()
 export class ComputerRepository {
@@ -24,13 +26,13 @@ export class ComputerRepository {
     const pageSize = 10;
     const offset = (page - 1) * pageSize;
 
-    const applications: (IApplication & { totalRecords: number })[] = await this.knex("applications")
-      .select("id", "computerId", "name", "size", "type", "installedAt")
+    const applications: (IApplication & { total_records: number })[] = await this.knex("applications")
+      .select("id", "computerId", "name", "size", "type", "installed_date")
       .where("computerId", computerId)
-      .orderBy("installedAt", "desc")
+      .orderBy("installed_date", "desc")
       .limit(pageSize)
       .offset(offset)
-      .select(this.knex.raw("COUNT(*) OVER() as totalRecords")); // Jami yozuvlar sonini olish
+      .select(this.knex.raw("COUNT(*) OVER() as total_records")); // Jami yozuvlar sonini olish
 
     if (applications.length === 0) {
       return {
@@ -41,7 +43,7 @@ export class ComputerRepository {
       };
     }
 
-    const totalRecords = Number(applications[0].totalRecords);
+    const totalRecords = Number(applications[0].total_records);
     return {
       data: applications,
       currentPage: page,
@@ -49,6 +51,100 @@ export class ComputerRepository {
       totalRecords,
     };
   }
+
+  async createOrUpdate(computerData: CreateComputerDto): Promise<{ computerId: string, status: string, key: string }> {
+    let key = computerData.network_adapters.map(item => item.mac_address).sort().join('_');
+    computerData.key = key;
+
+    const dataToInsert = {
+      ...computerData,
+      network_adapters: JSON.stringify(computerData.network_adapters),
+      disks: JSON.stringify(computerData.disks),
+    };
+
+    // INSERT yoki UPDATE bo‘lgan satrni tekshirish
+    const query = this.knex("computers")
+      .insert(dataToInsert)
+      .onConflict("key")
+      .merge()
+      .returning(["id", this.knex.raw("(xmax = 0) AS is_inserted")]); // xmax = 0 bo‘lsa, yangi qo‘shilgan
+
+    const [computer] = await query;
+    console.log('computer: ', computer);
+
+    // `is_inserted` = true bo‘lsa, INSERT bo‘lgan, aks holda UPDATE
+    const status = computer.is_inserted ? "registered" : "updated";
+
+    return {
+      computerId: computer.id,
+      key,
+      status,
+    };
+  }
+
+  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ id: string, status: string }[]> {
+    // const result = await this.knex('applications')
+    //   .insert(applications)
+    //   .onConflict(['computerId', 'remoteId'])
+    //   .merge({
+    //     name: this.knex.raw('EXCLUDED.name'),
+    //     size: this.knex.raw('EXCLUDED.size'),
+    //     type: this.knex.raw('EXCLUDED.type'),
+    //     // installedAt: this.knex.raw('EXCLUDED.installedAt')
+    //   })
+    //   // .where('computerId', computerId)
+    //   .whereRaw('"applications"."computerId" = EXCLUDED."computerId" AND "applications"."remoteId" = EXCLUDED."remoteId"')
+    //   .returning([
+    //     this.knex.raw('"remoteId" AS id'),
+    //     this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
+    //   ]);
+
+    const result = await this.knex('applications')
+      .insert(applications)
+      .onConflict(['computerId', 'remoteId'])
+      .merge({
+        name: this.knex.raw('EXCLUDED.name'),
+        size: this.knex.raw('EXCLUDED.size'),
+        type: this.knex.raw('EXCLUDED.type'),
+        // installedAt: this.knex.raw('EXCLUDED.installedAt')
+      })
+      .returning([
+        this.knex.raw('"remoteId" AS id'),
+        this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
+      ]);
+
+
+    // console.log('Final Response:', result);
+    return result as ({ id: string; status: string }[])
+  }
+
+
+  // async createOrUpdate(computerData: CreateComputerDto): Promise<{ computerId: string, status: string, key: string }> {
+  //   let key = computerData.network_adapters.map(item => item.mac_address).sort().join('_');
+  //   computerData.key = key;
+
+  //   const dataToInsert = {
+  //     ...computerData,
+  //     network_adapters: JSON.stringify(computerData.network_adapters), // JSON.stringify() qo‘shamiz
+  //     disks: JSON.stringify(computerData.disks),
+  //   };
+
+  //   const query = this.knex("computers")
+  //     .insert({ ...dataToInsert })
+  //     .onConflict("key")
+  //     .merge()
+  //     .returning(["*", this.knex.raw("xmax as is_updated")]); // PostgreSQL 'xmax' ustuni orqali tekshiramiz
+
+  //   const [computer] = await query;
+
+  //   const isUpdated = computer.is_updated !== 0;
+
+  //   return {
+  //     computerId: computer.id,
+  //     key,
+  //     status: isUpdated ? "updated" : "inserted",
+  //   }
+  // }
 
 
 

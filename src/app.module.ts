@@ -10,6 +10,7 @@ import { SshGateway } from './modules/v1/ssh/terminal/ssh.gateway';
 import { SshGatewayConnection } from './modules/v1/ssh/terminal/ssh.gatewayService';
 import knexConfig from 'src/config/database.config';
 import { ComputersModule } from './modules/v1/computer/copmuter.module';
+import { AgentsModule } from './modules/v1/agent/agent.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ComputersModule } from './modules/v1/computer/copmuter.module';
     SshModule,
     ProductsModule,
     ComputersModule,
+    AgentsModule,
     KnexModule.forRoot({
       config: {
         client: knexConfig.client, 

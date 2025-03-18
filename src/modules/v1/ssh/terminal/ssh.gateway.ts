@@ -236,6 +236,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                             skipDataCount--;
                             return;
                         } else {
+                            console.log(output);
                             socket.emit('data', { sessionId, output });
                         }
                     }

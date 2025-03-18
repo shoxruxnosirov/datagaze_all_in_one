@@ -1,69 +1,72 @@
-import { IsString, IsInt, IsArray, IsEnum, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
+// import { IsString, IsInt, IsArray, IsEnum, ValidateNested } from "class-validator";
+// import { Type } from "class-transformer";
 
-class NetworkAdapterDto {
-  @IsString()
-  nic_name: string;
+// class NetworkAdapterDto {
+//   @IsString()
+//   nic_name: string;
 
-  @IsString()
-  ip_address: string;
+//   @IsString()
+//   ip_address: string;
 
-  @IsString()
-  mac_address: string;
+//   @IsString()
+//   mac_address: string;
 
-  @IsEnum(["Up", "Down"])
-  available: "Up" | "Down";
-}
+//   @IsEnum(["Up", "Down"])
+//   available: "Up" | "Down";
+// }
 
-class DiskDto {
-  @IsString()
-  drive_name: string;
+// class DiskDto {
+//   @IsString()
+//   drive_name: string;
 
-  @IsString()
-  drive_type: string;
+//   @IsString()
+//   drive_type: string;
 
-  @IsInt()
-  total_size: number;
+//   @IsInt()
+//   total_size: number;
 
-  @IsInt()
-  available_space: number;
-}
+//   @IsInt()
+//   available_space: number;
+// }
 
-export class CreateComputerDto {
-  @IsString()
-  host_name: string;
+// export class CreateComputerDto {
 
-  @IsString()
-  operation_system: string;
+//   key?: string;
 
-  @IsString()
-  platform: string;
+//   @IsString()
+//   hostname: string;
 
-  @IsString()
-  build_number: string;
+//   @IsString()
+//   operation_system: string;
 
-  @IsString()
-  version: string;
+//   @IsString()
+//   platform: string;
 
-  @IsInt()
-  ram: number;
+//   @IsString()
+//   build_number: string;
 
-  @IsString()
-  cpu: string;
+//   @IsString()
+//   version: string;
 
-  @IsString()
-  model: string;
+//   @IsInt()
+//   ram: number;
 
-  @IsInt()
-  cores: number;
+//   @IsString()
+//   cpu: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => NetworkAdapterDto)
-  network_adapters: NetworkAdapterDto[];
+//   @IsString()
+//   model: string;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => DiskDto)
-  disks: DiskDto[];
-}
+//   @IsInt()
+//   cores: number;
+
+//   @IsArray()
+//   @ValidateNested({ each: true })
+//   @Type(() => NetworkAdapterDto)
+//   network_adapters: NetworkAdapterDto[];
+
+//   @IsArray()
+//   @ValidateNested({ each: true })
+//   @Type(() => DiskDto)
+//   disks: DiskDto[];
+// }

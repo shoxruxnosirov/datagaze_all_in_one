@@ -62,12 +62,22 @@ export interface IPayload {
   role: Role;
 }
 
+export interface IPayloadAgent {
+  computerId: string,
+  key: string
+}
+
 interface ICustomHeaders extends Headers {
   authorization?: string;
 }
 
 export interface IGuardRequest extends Request {
   user: IPayload;
+  headers: ICustomHeaders;
+}
+
+export interface IRequestAgent extends Request {
+  agent: IPayloadAgent;
   headers: ICustomHeaders;
 }
 

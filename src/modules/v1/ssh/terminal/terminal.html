@@ -48,7 +48,7 @@
 <body>
     <!-- Deploy Form -->
     <div>
-        <input type="text" id="productId" placeholder="Product ID" value="93d55ad2-8279-439a-8a25-d1fcf6c66440"><br>
+        <input type="text" id="productId" placeholder="Product ID" value="740c0898-6bb6-4257-b8a8-aab505fb62a0"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
         <input type="text" id="port" placeholder="Port" value="22"><br>
         <input type="text" id="username" placeholder="Username" value="root"><br>
@@ -59,7 +59,7 @@
     <!-- Go to Server Form -->
     <div>
         <input type="text" id="serverProductId" placeholder="Product ID"
-            value="93d55ad2-8279-439a-8a25-d1fcf6c66440"><br>
+            value="740c0898-6bb6-4257-b8a8-aab505fb62a0"><br>
         <button onclick="goToServer()">Go To Server</button>
     </div>
     <br>
@@ -75,7 +75,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://localhost:3004', { // 192.168.1.103, 18.116.24.103
+                socket = io('ws://3.145.147.3:3004', { // 192.168.1.103, 18.116.24.103
                     extraHeaders: {
                         transports: ['websocket'],
                         // Authorization: `Bearer ${sean.jwtToken}`,
@@ -166,7 +166,6 @@
             term.onData(data => {
                 socket.emit('command', { sessionId, command: data });
             });
-
         }
 
         // Terminalni ochish yoki yopish
