@@ -2,19 +2,19 @@ import {
     HttpException,
     HttpStatus,
     Injectable,
-    InternalServerErrorException,
+    // InternalServerErrorException,
 } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Writable } from 'stream';
-import { Client, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2';
+import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
 import { Socket } from 'socket.io';
 
 import { IMessage, IServer } from 'src/comman/types';
 import { ConnectDto } from '../dto/dtos';
-import { Response } from 'express';
-import { Readable } from 'stream';
+// import { Response } from 'express';
+// import { Readable } from 'stream';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()
@@ -28,7 +28,7 @@ export class SshGatewayConnection {
         connectConfig: ConnectDto,
         conn: Client,
         socket: Socket,
-        sessionId
+        sessionId: string
     ): Promise<void> {
         // console.log('connectData: ', connectConfig);
         return new Promise((resolve, reject) => {

@@ -16,7 +16,7 @@ import { ProductRepository } from 'src/database/repositories/product.repository'
 import { UseGuards } from '@nestjs/common';
 import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 import { IServer } from 'src/comman/types';
-import { skip } from 'rxjs';
+// import { skip } from 'rxjs';
 
 const filePath = 'example.txt';
 
@@ -51,8 +51,25 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // private prompt = `"\\x1b[A\\x1b[K\\x1b[01;32m$USER@$HOSTNAME\\x1b[00m:\\x1b[01;34m$(echo $PWD | sed 's|^$HOME|~|')\\x1b[00m\\x1b[37m$\\x1b[00m "`;
     // private prompt = `"\\x1b[A\\x1b[K\\x1b[01;32m$USER@$HOSTNAME\\x1b[00m:\\x1b[01;34m$(echo $PWD | sed "s|^$(eval echo ~$USER)|~|")\\x1b[00m\\x1b[37m$\\x1b[00m"`;
 
-    @UseGuards(WebSocketRolesGuard)
+    // @UseGuards(WebSocketRolesGuard)
     async handleConnection(socket: Socket) {
+
+        // const token = socket.handshake.headers['authorization']; // Token olish
+        // const accountId = socket.handshake.headers['customaccountid']; // Custom header olish
+      
+        // if (!token) {
+        //   console.log('Token yo‘q, chiqib ket!');
+        //   socket.disconnect();
+        //   return;
+        // }
+      
+        // try {
+        //   const decoded = jwt.verify(token.replace('Bearer ', ''), 'secret-key'); 
+        //   console.log(`User ID: ${decoded.sub}, Account ID: ${accountId}`);
+        // } catch (err) {
+        //   console.log('Xato token, vassalom!');
+        //   socket.disconnect();
+        // }
         // const adminId: string = socket.handshake.headers['adminId'].toString();
         console.log(`SocketClient ulandi: ${socket.id}`);
     }

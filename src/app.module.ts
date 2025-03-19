@@ -11,6 +11,8 @@ import { SshGatewayConnection } from './modules/v1/ssh/terminal/ssh.gatewayServi
 import knexConfig from 'src/config/database.config';
 import { ComputersModule } from './modules/v1/computer/copmuter.module';
 import { AgentsModule } from './modules/v1/agent/agent.module';
+import { AgentGateway } from './modules/v1/agent/gateway/agent.gateway';
+import { FrontendGateway } from './modules/v1/computer/gateway/computer.gateway';
 
 @Module({
   imports: [
@@ -27,6 +29,6 @@ import { AgentsModule } from './modules/v1/agent/agent.module';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, SshGateway, SshGatewayConnection],
+  providers: [AppService, SshGateway, SshGatewayConnection, AgentGateway, FrontendGateway],
 })
 export class AppModule { }
