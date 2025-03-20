@@ -8,13 +8,14 @@ import {
 } from '@nestjs/websockets';
 
 import { Server, Socket } from 'socket.io';
-import { UseGuards } from '@nestjs/common';
+import { forwardRef, Inject, UseGuards } from '@nestjs/common';
 // import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 import { JwtService } from '@nestjs/jwt';
 import { IPayloadAgent } from 'src/comman/types';
 import { JWT_SECRET } from 'src/config/env';
 import { WsException } from '@nestjs/websockets';
 import { AgentGuard } from 'src/comman/guards/agent.guard';
+import { FrontendGateway } from '../../computer/gateway/computer.gateway';
 
 
 @WebSocketGateway(3005, { cors: { origin: '*' } })
@@ -23,6 +24,9 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     constructor(
         private jwtService: JwtService,
+
+        @Inject(forwardRef(() => FrontendGateway))
+        private frondendSocket: FrontendGateway
     ) { }
 
     private computerIdAndSocket = new Map<string, Socket>();
@@ -63,7 +67,6 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 messsage: 'Token yaroqsiz, uzur chaqarib yuborildingiz!'
             });
 
-
             console.log('Token yaroqsiz!');
 
             socket.disconnect();
@@ -84,28 +87,55 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 
     @SubscribeMessage('deleted_app')
-    async deployingProject(
+    async deletedApp(
         socket: Socket,
         data: { command: string; name: string, status: string }
     ) {
-        console.log(" o'chirish buyrug'idan qaytgan data:", data);
+        // console.log("delete buyrug'idan qaytgan data:", data);
+        for (const [key, _socket] of this.computerIdAndSocket) {
+            if (_socket === socket) {
+
+                this.frondendSocket.responseCommand(key, 'delete_app', data.name, data)
+                console.log("delete buyrug'idan qaytgan data:", data);
+                break;
+            }
+        }
     }
+
+    @SubscribeMessage('installed_app')
+    async installedApp(
+        socket: Socket,
+        data: { command: string; name: string, status: string }
+    ) {
+        for (const [key, _socket] of this.computerIdAndSocket) {
+            if (_socket === socket) {
+                this.frondendSocket.responseCommand(key, 'install_app', data.name, data)
+                console.log("install buyrug'idan qaytgan data:", data);
+                break;
+            }
+        }
+    }
+
 
     @SubscribeMessage('update_app')
     async handleConnect(socket: Socket, data: { productId: string }) {
     }
 
-    sendCommandToAgent(computerId: string, commandData: {method: string; appName: string}): string {
+    sendCommandToAgent(computerId: string, commandData: { method: string; appName: string }): string {
         const socket = this.computerIdAndSocket.get(computerId);
-        if(socket) {
-            if(commandData.method === 'delete') {
+        if (socket) {
+            if (commandData.method === 'delete_app') {
                 socket.emit('delete_app', {
                     name: commandData.appName
                 });
                 return `buytuq yuborildi`;
+            } else if (commandData.method === 'install_app') {
+                socket.emit('install_app', {
+                    name: commandData.appName
+                });
+                return `buytuq yuborildi`;
             } else {
-                return 'boshqa';
-                // boshqa methodlar
+                return "boshqa method";
             }
         } else {
             return 'computer tarmoqda emas. keyinroq';

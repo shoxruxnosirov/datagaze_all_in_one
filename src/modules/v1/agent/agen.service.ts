@@ -28,7 +28,7 @@ export class AgentsService {
     }
   }
 
-  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{id: string; status: string}[]> {
+  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{name: string; status: string}[]> {
     return this.computerRepository.applicationRegister(applications, computerId);
   }
 

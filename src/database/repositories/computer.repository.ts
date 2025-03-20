@@ -23,7 +23,7 @@ export class ComputerRepository {
   }
 
   async getApplicationsByComputerId(computerId: string, page: number = 1): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
-    const pageSize = 10;
+    const pageSize = 1000;
     const offset = (page - 1) * pageSize;
 
     const applications: (IApplication & { total_records: number })[] = await this.knex("applications")
@@ -82,8 +82,7 @@ export class ComputerRepository {
     };
   }
 
-  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ id: string, status: string }[]> {
-
+  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ name: string, status: string }[]> {
     const result = await this.knex('applications')
       .insert(applications)
       .onConflict(['computerId', 'name'])
@@ -97,10 +96,8 @@ export class ComputerRepository {
         'name',
         this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
       ]);
-
-
     // console.log('Final Response:', result);
-    return result as ({ id: string; status: string }[])
+    return result as ({ name: string; status: string }[])
   }
 
 

@@ -1,9 +1,11 @@
-import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe, Res, Req, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe, Res, Req, UseGuards, NotFoundException } from "@nestjs/common";
 import { AgentsService } from "./agen.service";
 import { Computer } from "./entities/computer.model";
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 import { CreateComputerDto } from "./dto/computer";
 import { Response } from "express";
+import { join } from 'path';
+import { createReadStream, statSync, existsSync } from 'fs';
 import { IApplication } from "./interface/application";
 import { ApplicationDto } from "./dto/application";
 import { IRequestAgent } from "src/comman/types";
@@ -21,12 +23,10 @@ export class AgentsController {
 
   @Post('application/register')
   @UseGuards(AgentGuard)
-  @ApiOperation({ summary: 'register or update applications' })
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'register or update applications' })
   async applicationRegister(@Body() applications: ApplicationDto[], @Req() req: IRequestAgent, @Res() res: Response): Promise<Response> {
-
-    console.log('computer: ', req.agent);
-
+    // console.log('computer: ', req.agent);
     const uniqueApps = Array.from(new Map(applications.map(app => {
       app.computerId = req.agent.computerId;
       delete app.id;
@@ -37,10 +37,38 @@ export class AgentsController {
     //   app.computerId = req.agent.computerId;
     // });
     // console.log('applications: ', applications);
-
     const result = await this.agentsService.applicationRegister(uniqueApps, req.agent.computerId);
 
     return res.status(200).json(result);
+  }
+
+  @Get('application/download/:filename')
+  @UseGuards(AgentGuard)
+  @ApiBearerAuth()
+  @ApiParam({ name: 'appName', required: true, example: 'putty' })
+  downloadFile(
+    @Param('filename') filename: string,
+    @Res() res: Response
+  ) {
+    const filePath = join(process.cwd(), 'apps', filename, 'app.exe');
+
+    if (!existsSync(filePath)) {
+      throw new NotFoundException(`❌ Fayl topilmadi: ${filename}`);
+    }
+
+    const fileStat = statSync(filePath);
+
+    res.set({
+      'Content-Type': 'application/octet-stream',
+      'Content-Length': fileStat.size,
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Transfer-Encoding': 'chunked',
+    });
+
+    // const readStream = createReadStream(filePath);
+
+    const readStream = createReadStream(filePath, { highWaterMark: 16 * 1024 });
+    readStream.pipe(res);
   }
 
 
@@ -63,7 +91,5 @@ export class AgentsController {
   // getApplications(@Param("computerId", new ParseUUIDPipe({ version: '4' })) computerId: string, @Query('page') page?: number,) {  
   //   return this.computersService.getApplications(computerId, page ?? 1);
   // }
-
-
 
 }
