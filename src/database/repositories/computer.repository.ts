@@ -22,8 +22,8 @@ export class ComputerRepository {
     return computer;
   }
 
-  async getApplicationsByComputerId(computerId: string, page: number = 1): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
-    const pageSize = 1000;
+  async getApplicationsByComputerId(computerId: string, page: number, pageSize: number): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
+    // pageSize = 1000;
     const offset = (page - 1) * pageSize;
 
     const applications: (IApplication & { total_records: number })[] = await this.knex("applications")

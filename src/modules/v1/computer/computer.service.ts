@@ -21,7 +21,7 @@ export class ComputersService {
     return this.computerRepository.getComputerById(id);
   }
 
-  async getApplications(computerId: string, page: number): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
-    return this.computerRepository.getApplicationsByComputerId(computerId, page);
+  async getApplications(computerId: string, page: number, pageSize: number): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
+    return this.computerRepository.getApplicationsByComputerId(computerId, page, pageSize);
   }
 }
