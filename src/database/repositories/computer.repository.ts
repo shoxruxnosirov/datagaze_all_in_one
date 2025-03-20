@@ -37,7 +37,7 @@ export class ComputerRepository {
     if (applications.length === 0) {
       return {
         data: [],
-        currentPage: page,
+        currentPage: +page,
         totalPages: 0,
         totalRecords: 0,
       };
