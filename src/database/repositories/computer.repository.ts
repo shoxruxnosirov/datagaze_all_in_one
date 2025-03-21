@@ -92,8 +92,8 @@ export class ComputerRepository {
     // pageSize = 1000;
     const offset = (page - 1) * pageSize;
 
-    const applications: (IApplication & { total_records: number })[] = await this.knex("applications")
-      .select("computerId", "version", "name", "size", "type", "installed_date")
+    const applications: (IApplication & { total_records?: number })[] = await this.knex("applications")
+      .select("version", "name", "size", "type", "installed_date")
       .where("computerId", computerId)
       .orderBy("installed_date", "desc")
       .limit(pageSize)
@@ -110,6 +110,7 @@ export class ComputerRepository {
     }
 
     const totalRecords = Number(applications[0].total_records);
+    applications.forEach(app => delete app.total_records);
     return {
       data: applications,
       currentPage: page,
