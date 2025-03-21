@@ -4,14 +4,68 @@ import { KNEX_CONNECTION } from "src/database/workWithDB/database.module";
 import { ApplicationDto } from "src/modules/v1/agent/dto/application";
 import { CreateComputerDto } from "src/modules/v1/agent/dto/computer";
 import { IApplication } from "src/modules/v1/agent/interface/application";
-import { IComputer } from "src/modules/v1/agent/interface/computer";
+import { IComputer, IComputerForList, INetworkAdapter } from "src/modules/v1/agent/interface/computer";
 
 @Injectable()
 export class ComputerRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  async getAllComputers(): Promise<IComputer[]> {
-    return await this.knex("computers").select("*");
+  async getAllComputers(
+    page: number,
+    pageSize: number
+  ): Promise<
+    {
+      data: IComputerForList[],
+      currentPage: number,
+      totalPages: number,
+      totalRecords: number
+    }
+  > {
+    const offset = (page - 1) * pageSize;
+    const computers: (
+      IComputerForList & { total_records?: number }
+    )[] = await this.knex("computers")
+      .select("id", "hostname", "operation_system", "network_adapters")
+      .orderBy("created_at", "desc")
+      .limit(pageSize)
+      .offset(offset)
+      .select(this.knex.raw("COUNT(*) OVER() as total_records"));
+
+    if (computers.length === 0) {
+      return {
+        data: [],
+        currentPage: page,
+        totalPages: 0,
+        totalRecords: 0,
+      };
+    }
+
+
+    const totalRecords = Number(computers[0].total_records);
+
+    computers.forEach(computer => {
+      const activeNetwork = computer.network_adapters?.find(
+        (networkAdapter: INetworkAdapter) => networkAdapter.available === "Up"
+      );
+
+      if (activeNetwork) {
+        computer.activity = 'Active';
+        computer.ipAddress = activeNetwork.ip_address;
+      } else {
+        computer.activity = 'Inactive';
+        const firstNetworkAdapter = computer.network_adapters?.[0];
+        computer.ipAddress = firstNetworkAdapter ? firstNetworkAdapter.ip_address : undefined;
+      }
+      delete computer.network_adapters;
+      delete computer.total_records;
+    });
+
+    return {
+      data: computers,
+      currentPage: page,
+      totalPages: Math.ceil(totalRecords / pageSize),
+      totalRecords,
+    };
   }
 
   async getComputerById(id: number): Promise<IComputer> {
@@ -19,10 +73,22 @@ export class ComputerRepository {
     if (!computer) {
       throw new HttpException("Computer not found", HttpStatus.NOT_FOUND);
     }
+    delete computer.key;
     return computer;
   }
 
-  async getApplicationsByComputerId(computerId: string, page: number, pageSize: number): Promise<{ data: IApplication[], currentPage: number, totalPages: number, totalRecords: number }> {
+  async getApplicationsByComputerId(
+    computerId: string,
+    page: number,
+    pageSize: number
+  ): Promise<
+    {
+      data: IApplication[],
+      currentPage: number,
+      totalPages: number,
+      totalRecords: number
+    }
+  > {
     // pageSize = 1000;
     const offset = (page - 1) * pageSize;
 

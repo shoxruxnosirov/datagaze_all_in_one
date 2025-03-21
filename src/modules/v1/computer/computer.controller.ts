@@ -1,17 +1,29 @@
-import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe, ParseIntPipe } from "@nestjs/common";
 import { ComputersService } from "./computer.service";
 // import { Computer } from "./entities/computer.model";
 import { ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 import { IApplication } from "../agent/interface/application";
+import { IComputer, IComputerForList } from "../agent/interface/computer";
 
 @Controller("api/computers")
 export class ComputersController {
   constructor(private readonly computersService: ComputersService) { }
 
   @Get()
-  getAll() {
-    return this.computersService.getAllComputers();
+  @ApiQuery({ name: "page", type: Number, required: false, description: "Sahifa raqami (default: 1)" })
+  @ApiQuery({ name: "pageSize", type: Number, required: false, description: "Sahifa o‘lchami (default: 10)" })
+  getAll(
+    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number
+  ): Promise<{
+    data: IComputerForList[],
+    currentPage: number,
+    totalPages: number,
+    totalRecords: number
+  }> {
+    return this.computersService.getAllComputers(page ?? 1, pageSize ?? 10);
   }
+  
 
   @Get(":computerId")
   @ApiParam({ name: "computerId", type: "string", required: true, description: "Kompyuterning ID si" })

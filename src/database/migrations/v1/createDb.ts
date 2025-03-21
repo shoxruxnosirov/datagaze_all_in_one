@@ -140,6 +140,7 @@ const db = Knex(knexConfig);
         table.string("build_number").nullable();     
         table.string("version").notNullable();          
         table.integer("ram").notNullable();
+        table.integer("free_ram").defaultTo(50);
         table.string("cpu").notNullable();
         table.string("model").notNullable();            
         table.integer("cores").notNullable();          

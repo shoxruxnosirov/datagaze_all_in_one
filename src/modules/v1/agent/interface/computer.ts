@@ -13,6 +13,8 @@ export interface INetworkAdapter {
   }
   
   export interface IComputer {
+    id: string;
+    key?: string;
     hostname: string;
     operation_system: string;
     platform: string;
@@ -24,5 +26,14 @@ export interface INetworkAdapter {
     cores: number;
     network_adapters: INetworkAdapter[];
     disks: IDisk[];
+  }
+
+  export interface IComputerForList {
+    id: string
+    hostname: string;
+    operation_system: string;
+    network_adapters?: INetworkAdapter[];
+    activity?: string;
+    ipAddress?: string;
   }
   
