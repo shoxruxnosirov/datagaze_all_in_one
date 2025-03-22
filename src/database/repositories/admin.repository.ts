@@ -96,7 +96,11 @@ export class AdminRepository {
         return result;
       }
     } catch (error) {
-      throw new BadRequestException(`Database error: ${error.message}`);
+      if(error in NotFoundException) {
+        throw error;
+      } else {
+        throw new BadRequestException(`Database error: ${error.message}`);
+      }
     }
   }
 
@@ -164,6 +168,9 @@ export class AdminRepository {
   }
 
   async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<IMessage> {
+    if(updates.password) {
+      updates.password = await this.hashPassword(updates.password);
+    }
     const result = await this.knex('admins').where({ id }).update(updates).returning('*');
 
     if (result.length === 0) {
@@ -177,7 +184,7 @@ export class AdminRepository {
   }
 
   async deleteAdminBySuperadmin(id: string): Promise<IMessage> {
-    const result = await this.knex('Admins').where({ id }).del().returning('*');
+    const result = await this.knex('admins').where({ id }).del().returning('*');
 
     if (result.length === 0) {
       throw new HttpException(
