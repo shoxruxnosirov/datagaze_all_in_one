@@ -1,12 +1,12 @@
 import {
   Body,
-  ConflictException,
+  // ConflictException,
   Controller,
   Delete,
   Get,
   HttpException,
   HttpStatus,
-  NotFoundException,
+  // NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -34,13 +34,14 @@ import { Role } from 'src/comman/guards/roles.enum';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 import { CreateAdminDto } from './dto/register';
 import { LoginAdminDto } from './dto/login';
+import { RolesGuardForRefreshToken } from 'src/comman/guards/refreshToken.guard';
 
 @Controller('api/auth')
 export class AdminController {
   constructor(private adminService: AdminService) { }
 
   @Post('login')
-  @ApiOperation({ summary: 'Create a new user' })
+  @ApiOperation({ summary: 'Login' })
   @ApiBody({
     schema: {
       type: 'object',
@@ -87,7 +88,7 @@ export class AdminController {
   @Post('')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Create a new admin by superadmin' })
+  @ApiOperation({ summary: 'Create an admin by ID (Superadmin only)' })
   @ApiBearerAuth()
   @ApiBody({
     schema: {
@@ -109,7 +110,7 @@ export class AdminController {
   @Delete(':adminId')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Delete admin' })
+  @ApiOperation({ summary: 'Delete an admin by ID (Superadmin only)' })
   @ApiBearerAuth()
   @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
   async deleteAdminProfileBySuperAdmin(
@@ -118,10 +119,10 @@ export class AdminController {
     return this.adminService.deleteAdminBySuperadmin(id);
   }
 
-  @Put(':adminId') 
+  @Put(':adminId')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Update admin profile' })
+  @ApiOperation({ summary: 'Update an admin by ID (Superadmin only)' })
   @ApiBearerAuth()
   @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
   @ApiBody({
@@ -144,38 +145,6 @@ export class AdminController {
     return this.adminService.updateProfile({ id, updateProfileData });
   }
 
-
-
-
-  @Patch('update-password-by-superadmin/:adminId')
-  @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN,)
-  @ApiOperation({ summary: 'Update password [superadmin -> user_id]' })
-  @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
-  @ApiBearerAuth()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        // userId: {
-        //   default: 'admin_id',
-        //   type: 'string',
-        //   description: "Faqat superadmin uchun - o'zgartirilayotgan adminning IDsi",
-        // },
-        newPassword: { default: 'new_password_123', type: 'string', description: 'Yangi parol' },
-      },
-      required: ['userId', 'newPassword'],
-    },
-  })
-  async updateAdminPasswordBySuperadmin(
-    @Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Body() body: { newPassword: string },
-  ): Promise<IMessage> {
-    return this.adminService.updateAdminPasswordBySuperadmin({
-      userId: id,
-      newPassword: body.newPassword
-    });
-  }
 
   @Patch('update-password')
   @UseGuards(RolesGuard)
@@ -202,86 +171,96 @@ export class AdminController {
     });
   }
 
-  @Patch('update-profile-by-superadmin/:adminId')
-  @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Update admin profile' })
-  @ApiBearerAuth()
-  @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
-        name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
-        email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
-      },
-      required: [],
-    },
-  })
-  async updateAdminProfileBySuperAdmin(
-    @Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string,
-    @Body() updateProfileData: UpdateAdminProfileDto,
-    @Req() req: IGuardRequest,
-  ): Promise<IMessage> {
-    return this.adminService.updateProfile({ id, updateProfileData });
-  }
-
-  @Patch('update-profile')
-  @UseGuards(RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
-  @ApiOperation({ summary: 'Update admin profile' })
-  @ApiBearerAuth()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
-        name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
-        email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
-      },
-      required: [],
-    },
-  })
-  async updateAdminProfile(
-    @Body() updateProfileData: UpdateAdminProfileDto,
-    @Req() req: IGuardRequest,
-  ): Promise<IMessage> {
-    return this.adminService.updateProfile({ id: req.user.id, updateProfileData });
-  }
-
-
-
-
   @Post('refreshtoken')
-  @UseGuards(RolesGuard)
+  @UseGuards(RolesGuardForRefreshToken)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'refresh token with refresh_token' })
   @ApiBearerAuth()
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        refresh_token: { default: '', type: 'string', description: 'token olish uchun refresh_token' },
-      },
-      required: ['refresh_token'],
-    },
-  })
   async refreshToken(
-    @Body() data: { refresh_token: string },
     @Req() req: IGuardRequest,
   ): Promise<ITokens> {
-    try {
-      console.log('refreshtoken');
-      return this.adminService.refreshTokens(data.refresh_token, req.user);
-    } catch (err) {
-      throw new HttpException(
-        {
-          status: 'error',
-          message: "refresh_token orqali token olishda xatolik sodir bo'ldi: " + err.message,
-        },
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
+    return this.adminService.refreshTokens(req.user);
   }
+
+
+  // @Patch('update-password-by-superadmin/:adminId')
+  // @UseGuards(RolesGuard)
+  // @Roles(Role.SUPER_ADMIN,)
+  // @ApiOperation({ summary: 'Update password [superadmin -> user_id]' })
+  // @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
+  // @ApiBearerAuth()
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       // userId: {
+  //       //   default: 'admin_id',
+  //       //   type: 'string',
+  //       //   description: "Faqat superadmin uchun - o'zgartirilayotgan adminning IDsi",
+  //       // },
+  //       newPassword: { default: 'new_password_123', type: 'string', description: 'Yangi parol' },
+  //     },
+  //     required: ['userId', 'newPassword'],
+  //   },
+  // })
+  // async updateAdminPasswordBySuperadmin(
+  //   @Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string,
+  //   @Body() body: { newPassword: string },
+  // ): Promise<IMessage> {
+  //   return this.adminService.updateAdminPasswordBySuperadmin({
+  //     userId: id,
+  //     newPassword: body.newPassword
+  //   });
+  // }
+
+
+  // @Patch('update-profile-by-superadmin/:adminId')
+  // @UseGuards(RolesGuard)
+  // @Roles(Role.SUPER_ADMIN)
+  // @ApiOperation({ summary: 'Update admin profile' })
+  // @ApiBearerAuth()
+  // @ApiParam({ name: 'adminId', description: 'User ID', type: 'string' })
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
+  //       name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
+  //       email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
+  //     },
+  //     required: [],
+  //   },
+  // })
+  // async updateAdminProfileBySuperAdmin(
+  //   @Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string,
+  //   @Body() updateProfileData: UpdateAdminProfileDto,
+  //   @Req() req: IGuardRequest,
+  // ): Promise<IMessage> {
+  //   return this.adminService.updateProfile({ id, updateProfileData });
+  // }
+
+
+  // @Patch('update-profile')
+  // @UseGuards(RolesGuard)
+  // @Roles(Role.SUPER_ADMIN)
+  // @ApiOperation({ summary: 'Update admin profile' })
+  // @ApiBearerAuth()
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
+  //       name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
+  //       email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
+  //     },
+  //     required: [],
+  //   },
+  // })
+  // async updateAdminProfile(
+  //   @Body() updateProfileData: UpdateAdminProfileDto,
+  //   @Req() req: IGuardRequest,
+  // ): Promise<IMessage> {
+  //   return this.adminService.updateProfile({ id: req.user.id, updateProfileData });
+  // }
+
 }

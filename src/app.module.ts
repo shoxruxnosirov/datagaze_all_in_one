@@ -13,6 +13,7 @@ import { ComputersModule } from './modules/v1/computer/copmuter.module';
 import { AgentsModule } from './modules/v1/agent/agent.module';
 import { AgentGateway } from './modules/v1/agent/gateway/agent.gateway';
 import { FrontendGateway } from './modules/v1/computer/gateway/computer.gateway';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { FrontendGateway } from './modules/v1/computer/gateway/computer.gateway'
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, SshGateway, SshGatewayConnection, AgentGateway, FrontendGateway],
+  providers: [AppService, SshGateway, SshGatewayConnection, AgentGateway, FrontendGateway, JwtService],
+  exports: [JwtService]
 })
 export class AppModule { }

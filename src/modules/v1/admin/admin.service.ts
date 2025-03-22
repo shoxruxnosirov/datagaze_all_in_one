@@ -70,9 +70,9 @@ export class AdminService {
         return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
   }
 
-  async updateAdminPasswordBySuperadmin(data: UpdateAdminPasswordBySuperadminoDto): Promise<IMessage> {
-        return this.adminRepository.updatePasswordBySuperadmin(data);
-  }
+  // async updateAdminPasswordBySuperadmin(data: UpdateAdminPasswordBySuperadminoDto): Promise<IMessage> {
+  //       return this.adminRepository.updatePasswordBySuperadmin(data);
+  // }
 
   async updateProfile(data: {
     id: string;
@@ -91,22 +91,15 @@ export class AdminService {
     return this.adminRepository.deleteAdminBySuperadmin(id)
   }
 
-  refreshTokens(refreshToken: string, admin: IPayload): ITokens {
-    try {
-      // const { id, username, role } = this.jwtService.verify<IPayload>(refreshToken, {
-      //   secret: REFRESH_TOKEN_SECRET,
-      // });
-
-      // const payload: IPayload = { id, username, role };
-      const payload = admin;
-
+  refreshTokens(payload: IPayload): ITokens {
+    // try {
       return {
         token: this.createAccessToken(payload),
         refreshToken: this.createRefreshToken(payload),
       };
-    } catch (err) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
+    // } catch (err) {
+    //   throw new UnauthorizedException('Invalid refresh token');
+    // }
   }
 
   private createRefreshToken(payload: IPayload): string {

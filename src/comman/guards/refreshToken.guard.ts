@@ -8,18 +8,18 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import { JwtService } from '@nestjs/jwt';
-import { JWT_SECRET } from 'src/config/env';
+import { REFRESH_TOKEN_SECRET } from 'src/config/env';
 import { Role } from './roles.enum';
 import { IGuardRequest, IPayload } from '../types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 
 @Injectable()
-export class RolesGuard implements CanActivate {
+export class RolesGuardForRefreshToken implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
     private readonly adminRepository: AdminRepository,
-  ) {}
+  ) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<string[]>('roles', context.getHandler());
@@ -35,13 +35,13 @@ export class RolesGuard implements CanActivate {
     }
 
     try {
-      const decoded: IPayload = this.jwtService.verify(token, { secret: JWT_SECRET });
+      const decoded: IPayload = this.jwtService.verify(token, { secret: REFRESH_TOKEN_SECRET });
       const userRole: Role = decoded.role;
 
-      if(userRole === Role.ADMIN) {
+      if (userRole === Role.ADMIN) {
         try {
           await this.adminRepository.getOneAdmin(decoded.id)
-        } catch(err) {
+        } catch (err) {
           throw new ForbiddenException('You do not have permission to access this resource');
         }
       }
@@ -57,11 +57,7 @@ export class RolesGuard implements CanActivate {
       }
       return true;
     } catch (err) {
-      if(err instanceof ForbiddenException) {
-        throw err;
-      } else {
-        throw new UnauthorizedException('Yaroqsiz token');
-      }
+      throw new UnauthorizedException('Yaroqsiz token');
     }
   }
 }

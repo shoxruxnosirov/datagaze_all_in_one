@@ -4,10 +4,11 @@ import { ComputersController } from "./computer.controller";
 
 import { DatabaseModule } from '../../../database/workWithDB/database.module';
 import { ComputerRepository } from "src/database/repositories/computer.repository";
+import { AdminModule } from "../admin/admin.module";
 // import { DatabaseModule } from "../database.module";
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AdminModule],
   controllers: [ComputersController],
   providers: [ComputersService, ComputerRepository],
 })

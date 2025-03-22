@@ -5,9 +5,10 @@ import { ProductsService } from './product.service';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 // import { RolesGuard } from 'src/comman/guards/roles.guard';
 import { JwtService } from '@nestjs/jwt';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
-  imports: [],
+  imports: [AdminModule],
   controllers: [ProductsController],
   providers: [ProductsService, ProductRepository, JwtService],
   exports: [JwtService, ProductRepository]

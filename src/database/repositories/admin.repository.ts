@@ -31,7 +31,7 @@ export class AdminRepository {
     if (!data) {
       throw new UnauthorizedException({
         status: 'error',
-        message: 'Invalid username or password no data',
+        message: 'Invalid username or password incorrect',
       });
     }
     const isPasswordValid = await this.comparePassword(admin.password, data.password);
@@ -40,7 +40,7 @@ export class AdminRepository {
       // Agar parol xato bo'lsa, unauthorized xatolik tashlaymiz
       throw new UnauthorizedException({
         status: 'error',
-        message: 'Invalid username or password password incorrect',
+        message: 'Invalid username or password incorrect',
       });
     }
 
@@ -96,7 +96,7 @@ export class AdminRepository {
         return result;
       }
     } catch (error) {
-      if(error in NotFoundException) {
+      if (error instanceof NotFoundException) {
         throw error;
       } else {
         throw new BadRequestException(`Database error: ${error.message}`);
@@ -106,33 +106,33 @@ export class AdminRepository {
 
 
 
-  async updatePasswordBySuperadmin(data: {
-    userId: string;
-    newPassword: string;
-  }): Promise<IMessage> {
-    const result = await this.knex('admins')
-      .where({ id: data.userId })
-      .update({
-        password: await this.hashPassword(data.newPassword),
-      })
-      .whereNot({ role: 'superadmin' })
-      .returning(['id', 'role']);
+  // async updatePasswordBySuperadmin(data: {
+  //   userId: string;
+  //   newPassword: string;
+  // }): Promise<IMessage> {
+  //   const result = await this.knex('admins')
+  //     .where({ id: data.userId })
+  //     .update({
+  //       password: await this.hashPassword(data.newPassword),
+  //     })
+  //     .whereNot({ role: 'superadmin' })
+  //     .returning(['id', 'role']);
 
-    if (!result.length) {
-      throw new HttpException(
-        {
-          status: 'error',
-          message: 'Siz superadmin parolini userId orqali yangilay olmaysan'
-        },
-        HttpStatus.FORBIDDEN
-      );
-    }
+  //   if (!result.length) {
+  //     throw new HttpException(
+  //       {
+  //         status: 'error',
+  //         message: 'Siz superadmin parolini userId orqali yangilay olmaysan'
+  //       },
+  //       HttpStatus.FORBIDDEN
+  //     );
+  //   }
 
-    return {
-      status: 'success',
-      message: `Password updated successfully  new password: "${data.newPassword}"`,
-    };
-  }
+  //   return {
+  //     status: 'success',
+  //     message: `Password updated successfully  new password: "${data.newPassword}"`,
+  //   };
+  // }
 
 
   async updatePasswordByAdmin(
@@ -168,13 +168,14 @@ export class AdminRepository {
   }
 
   async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<IMessage> {
-    if(updates.password) {
+    if (updates.password) {
       updates.password = await this.hashPassword(updates.password);
     }
     const result = await this.knex('admins').where({ id }).update(updates).returning('*');
 
     if (result.length === 0) {
-      throw new BadRequestException('Foydalanuvchi topilmadi');
+      // throw new BadRequestException('Foydalanuvchi topilmadi');
+      throw new NotFoundException(`Foydalanuvchi topilmadi`);
     }
 
     return {
