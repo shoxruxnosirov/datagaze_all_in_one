@@ -32,11 +32,7 @@ export class AgentsController {
       delete app.id;
       return [app.name, app];
     })).values());
-
-    // uniqueApps.forEach(app => {
-    //   app.computerId = req.agent.computerId;
-    // });
-    // console.log('applications: ', applications);
+    
     const result = await this.agentsService.applicationRegister(uniqueApps, req.agent.computerId);
 
     return res.status(200).json(result);

@@ -8,14 +8,14 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import { JwtService } from '@nestjs/jwt';
-import { JWT_SECRET } from 'src/config/env';
+import { AGENT_TOKEN_SECRET } from 'src/config/env';
 import { Role } from './roles.enum';
 import { IGuardRequest, IPayload, IPayloadAgent, IRequestAgent } from '../types';
 
 @Injectable()
 export class AgentGuard implements CanActivate {
   constructor(
-    private readonly reflector: Reflector,
+    // private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
   ) {}
 
@@ -28,7 +28,7 @@ export class AgentGuard implements CanActivate {
     }
 
     try {
-      const decoded: IPayloadAgent = this.jwtService.verify(token, { secret: JWT_SECRET });
+      const decoded: IPayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
       const payload: IPayloadAgent = {
         computerId: decoded.computerId,
         key: decoded.key,

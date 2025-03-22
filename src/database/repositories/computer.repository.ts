@@ -150,22 +150,48 @@ export class ComputerRepository {
   }
 
   async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ name: string, status: string }[]> {
-    const result = await this.knex('applications')
+    return await this.knex('applications')
+      // 1. O'chirish uchun CTE
+      .with('deleted_apps', (qb) => {
+        qb.from('applications')
+          .where('computerId', computerId)
+          .whereNotIn('name', applications.map(app => app.name))
+          .del()
+          .returning(['name', this.knex.raw("'deleted' AS status")]);
+      })
+      // 2. Yangi ma'lumotlarni qo'shish yoki yangilash
       .insert(applications)
       .onConflict(['computerId', 'name'])
       .merge({
         name: this.knex.raw('EXCLUDED.name'),
         size: this.knex.raw('EXCLUDED.size'),
-        type: this.knex.raw('EXCLUDED.type'),
-        // installedAt: this.knex.raw('EXCLUDED.installedAt')
+        type: this.knex.raw('EXCLUDED.type')
       })
       .returning([
         'name',
-        this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
-      ]);
-    // console.log('Final Response:', result);
-    return result as ({ name: string; status: string }[])
+        this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END AS status")
+      ])
+      // 3. Natijalarni birlashtirish
+      .unionAll(this.knex.select('*').from('deleted_apps'));
   }
+  
+
+  // async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ name: string, status: string }[]> {
+  //   const result = await this.knex('applications')
+  //     .insert(applications)
+  //     .onConflict(['computerId', 'name'])
+  //     .merge({
+  //       name: this.knex.raw('EXCLUDED.name'),
+  //       size: this.knex.raw('EXCLUDED.size'),
+  //       type: this.knex.raw('EXCLUDED.type'),
+  //       // installedAt: this.knex.raw('EXCLUDED.installedAt')
+  //     })
+  //     .returning([
+  //       'name',
+  //       this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END as status")
+  //     ]);
+  //   return result as ({ name: string; status: string }[])
+  // }
 
 
   // async createOrUpdate(computerData: CreateComputerDto): Promise<{ computerId: string, status: string, key: string }> {
