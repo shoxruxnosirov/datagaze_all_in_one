@@ -27,8 +27,8 @@ export class SshService {
         // startCommand: string;
         serverCredentials: ConnectDto
     }, res: Response) {
-        const { fileUrl } = await this.productRepository.getProductForDeploy(config.productId);
-        await this.connectServer.deployProject({localProjectPath: fileUrl, serverCredentials: config.serverCredentials}, res);
+        const { serverFilePath } = await this.productRepository.getProductForDeploy(config.productId);
+        await this.connectServer.deployProject({localProjectPath: serverFilePath, serverCredentials: config.serverCredentials}, res);
         const newServer: IServer = await this.sshRepository.storeSshCredentials(config.serverCredentials);
         return newServer;
     }

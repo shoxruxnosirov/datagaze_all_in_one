@@ -111,11 +111,11 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         config: { productId: string; serverCredentials: ConnectDto },
     ) {
         const sessionId = randomUUID(); // Unikal ID yaratish
-        const { fileUrl } = await this.productRepository.getProductForDeploy(config.productId);
+        const { serverFilePath } = await this.productRepository.getProductForDeploy(config.productId);
         const conn: Client = new Client();
         await this.sshGatewayConn.deployProject(
             {
-                localProjectPath: fileUrl,
+                localProjectPath: serverFilePath,
                 serverCredentials: config.serverCredentials
             },
             socket,

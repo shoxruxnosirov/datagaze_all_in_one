@@ -34,10 +34,10 @@ export class ProductRepository {
     );
   }
 
-  async getProductForDeploy(id: string): Promise<{ fileUrl: string }> {
+  async getProductForDeploy(id: string): Promise<{ serverFilePath: string }> {
     return this.knex('products')
       .where('products.id', id)
-      .select('products.fileUrl')  // Select only the urlPath column
+      .select('products.serverFilePath')  // Select only the urlPath column
       .first();
   }
 
@@ -249,5 +249,18 @@ export class ProductRepository {
       requiredStorage: result.requiredStorage,
       requiredNetwork: result.requiredNetwork,
     };
+  }
+
+  async create(productData: any) {
+    try {
+      const [insertedId] = await this.knex('products').insert(productData).returning('id');
+
+      return {
+        message: 'Mahsulot muvaffaqiyatli qo‘shildi!',
+        id: insertedId,
+      };
+    } catch (error) {
+      throw new Error(`Xatolik: ${error.message}`);
+    }
   }
 }

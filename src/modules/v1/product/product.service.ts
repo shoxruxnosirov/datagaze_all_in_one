@@ -73,9 +73,9 @@ export class ProductsService {
 
 
 
-  // async create(productData: ProductDto): Promise<IProduct> {
-  //   return this.procuctRepository.create(productData);
-  // }
+  async saveData(productData: any): Promise<any> {
+    return this.procuctRepository.create(productData);
+  }
 
   // async update(id: string, productData: ProductData): Promise<IProduct> {
   //   return this.procuctRepository.findByIdAndUpdate(id, productData);

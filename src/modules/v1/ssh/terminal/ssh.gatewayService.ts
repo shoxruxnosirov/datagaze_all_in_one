@@ -175,6 +175,7 @@ export class SshGatewayConnection {
                 let progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                 console.log(`\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
+                socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress });
                 socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
 
                 const readStream = fs.createReadStream(localFilePath);
@@ -187,11 +188,16 @@ export class SshGatewayConnection {
                     const progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                     console.log(`\x1b[A\x1b[K\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
+
+                    socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress });
                     socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
                 });
 
                 writeStream.on('close', () => {
                     console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Nodejs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m`);
+
+                    socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress: 100..toFixed(2) });
+                    socket.emit('installing', { sessionId, eventName: "Nodejs installing", progress: 0..toFixed(2) });
                     socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 NodeJs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m` });
 
                     sftp.end();
@@ -253,6 +259,7 @@ export class SshGatewayConnection {
 
                             stream.on('data', (data: Buffer) => {
                                 console.log(`\x1b[A\x1b[K📦 Nodejs version: ${data.toString()} \x1b[0m`);
+                                socket.emit('installing', { sessionId, eventName: "Nodejs installing", progress: 100..toFixed(2) });
                                 socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G📦 Nodejs version: ${data.toString()} \x1b[0m` });
                             });
 
@@ -312,14 +319,17 @@ export class SshGatewayConnection {
             let remoteProjectPath: string = '';
 
             if (osType === 'Windows') {
-                localProjectPath = path.join(localProjectPath, 'product.zip');
-                remoteFile = 'C:\\Users\\Administrator\\Downloads\\product.zip';
+                // localProjectPath = path.resolve(__dirname, localProjectPath)
+                // localProjectPath = path.join(localProjectPath, 'product.zip');
+                remoteFile = 'C:\\Users\\Administrator\\Downloads\\' + path.basename(localProjectPath);
                 remoteProjectPath = 'C:';
             } //if (osType === 'Linux')
             else {
-                localProjectPath = path.join(localProjectPath, 'product.tar.xz');
+                // localProjectPath = path.join(localProjectPath, 'product.tar.xz');
                 // localProjectPath = "/home/kali/.ssh/filePem.pem";
-                remoteFile = `product.tar.xz`;
+                // remoteFile = `product.tar.xz`;
+
+                remoteFile = path.basename(localProjectPath);
                 remoteProjectPath = `~`;
             }
 
@@ -349,6 +359,8 @@ export class SshGatewayConnection {
                 let progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
                 console.log(`\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
+
+                socket.emit('uploading', { sessionId, eventName: "Product uploading", progress });
                 socket.emit('data', { sessionId, output: `\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
 
                 readStream.on('data', (chunk) => {
@@ -362,12 +374,16 @@ export class SshGatewayConnection {
                     // console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
 
                     // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
+
+                    socket.emit('uploading', { sessionId, eventName: "Product uploading", progress });
                     socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
                 });
 
                 writeStream.on('close', () => {
                     console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi\x1b[0m`);
                     // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m` });
+
+                    socket.emit('uploading', { sessionId, eventName: "Product uploading", progress: 100..toFixed(2) });
                     socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m\r\n` });
 
                     sftp.end();

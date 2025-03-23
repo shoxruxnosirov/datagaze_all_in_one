@@ -66,69 +66,74 @@ const db = Knex(knexConfig);
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('name').notNullable();
       table.text('icon').nullable();
-      table.string('version').notNullable();
+      table.string('serverVersion').notNullable();
+      table.string('agentVersion').notNullable();
 
-      table.string('fileUrl').notNullable();
+      table.string('serverFilePath').notNullable();
+      table.string('agentFilePath').notNullable();
       // table.text('download_path').notNullable();
 
       table.uuid('serverId').nullable().references('id').inTable('servers').onDelete('SET NULL');
 
-      table.integer('size').notNullable();
-      table.string('company').notNullable();
-      table.text('description').nullable();
-      table.string('supportOS').notNullable();
+      table.integer('serverFileSize').notNullable();
+      table.integer('agentFileSize').notNullable();
 
-      table.integer('requiredCpuCore').nullable();
-      table.integer('requiredRam').nullable();
-      table.integer('requiredStorage').nullable();
-      table.integer('requiredNetwork').nullable();
+      table.string('publisher').notNullable();
+
+      table.text('description').nullable();
+      table.string('supportOS').nullable();
+
+      table.integer('requiredCpuCore').defaultTo(8);
+      table.integer('requiredRam').defaultTo(16);
+      table.integer('requiredStorage').defaultTo(500);
+      table.integer('requiredNetwork').defaultTo(1);
 
       table.integer('computerCount').notNullable().defaultTo(0);
-      table.timestamp('firstUploadAt').nullable().defaultTo(null);
-      table.timestamp('lastUploadAt').nullable().defaultTo(null);
+      table.timestamp('firstUploadAt').defaultTo(db.fn.now());
+      table.timestamp('lastUploadAt').defaultTo(db.fn.now());
     });
 
-    await db('products').insert({
-      id: db.raw('uuid_generate_v4()'),
-      name: 'DLP',
-      icon: 'icons/launchpad/dlp.png',
-      version: '2.4.5',
-      fileUrl: path.join(process.cwd(), 'products/dlp'),
-      // download_path: '/downloads/superadmin.zip',
-      serverId: null,
-      size: 1300, // MB
-      company: 'Datagaze',
-      description: 'Datagaze DLP',
-      supportOS: 'Windows, Linux, MacOS',
-      requiredCpuCore: 8,
-      requiredRam: 16, // MB
-      requiredStorage: 500, // MB
-      requiredNetwork: 1, // Mbps
-      computerCount: 0,
-      firstUploadAt: null,
-      lastUploadAt: null,
-    });
+    // await db('products').insert({
+    //   id: db.raw('uuid_generate_v4()'),
+    //   name: 'DLP',
+    //   icon: 'icons/launchpad/dlp.png',
+    //   version: '2.4.5',
+    //   fileUrl: path.join(process.cwd(), 'products/dlp'),
+    //   // download_path: '/downloads/superadmin.zip',
+    //   serverId: null,
+    //   size: 1300, // MB
+    //   company: 'Datagaze',
+    //   description: 'Datagaze DLP',
+    //   supportOS: 'Windows, Linux, MacOS',
+    //   requiredCpuCore: 8,
+    //   requiredRam: 16, // MB
+    //   requiredStorage: 500, // MB
+    //   requiredNetwork: 1, // Mbps
+    //   computerCount: 0,
+    //   firstUploadAt: null,
+    //   lastUploadAt: null,
+    // });
 
-    await db('products').insert({
-      id: db.raw('uuid_generate_v4()'),
-      name: 'WAF',
-      icon: 'icons/launchpad/waf.png',
-      version: '2.6.3',
-      fileUrl: path.join(process.cwd(), 'products/waf'),
-      // download_path: '/downloads/superadmin.zip',
-      serverId: null,
-      size: 1300, // MB
-      company: 'Datagaze',
-      description: 'Datagaze WAF',
-      supportOS: 'Windows, Linux, MacOS',
-      requiredCpuCore: 8,
-      requiredRam: 16, // MB
-      requiredStorage: 500, // MB
-      requiredNetwork: 1, // Mbps
-      computerCount: 0,
-      firstUploadAt: null,
-      lastUploadAt: null,
-    });
+    // await db('products').insert({
+    //   id: db.raw('uuid_generate_v4()'),
+    //   name: 'WAF',
+    //   icon: 'icons/launchpad/waf.png',
+    //   version: '2.6.3',
+    //   fileUrl: path.join(process.cwd(), 'products/waf'),
+    //   // download_path: '/downloads/superadmin.zip',
+    //   serverId: null,
+    //   size: 1300, // MB
+    //   company: 'Datagaze',
+    //   description: 'Datagaze WAF',
+    //   supportOS: 'Windows, Linux, MacOS',
+    //   requiredCpuCore: 8,
+    //   requiredRam: 16, // MB
+    //   requiredStorage: 500, // MB
+    //   requiredNetwork: 1, // Mbps
+    //   computerCount: 0,
+    //   firstUploadAt: null,
+    //   lastUploadAt: null,
+    // });
 
 
       await  db.schema.createTable("computers", (table) => {
