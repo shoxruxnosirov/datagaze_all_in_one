@@ -75,7 +75,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
+                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
                     extraHeaders: {
                         transports: ['websocket'],
                         // Authorization: `Bearer ${sean.jwtToken}`,
@@ -115,6 +115,17 @@
                     const termObj = terminals.get(sessionId);
                     terminals.get(sessionId)?.write(output);
                 });
+
+                socket.on('uploading', ({ sessionId, progress, eventName }) => {
+                    const termObj = terminals.get(sessionId);
+                    console.log(eventName + ' : ' + progress + '\n');
+                });
+
+                socket.on('installing', ({ sessionId, progress, eventName }) => {
+                    const termObj = terminals.get(sessionId);
+                    console.log(eventName + ' : ' + progress+ '\n');
+                });
+                
 
                 // socket.on('alert', () => {
                 //     console.log('Connected to server');

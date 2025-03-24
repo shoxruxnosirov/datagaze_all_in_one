@@ -32,15 +32,15 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // **Frontend buyruq jo‘natganda agentga uzatish**
   @SubscribeMessage('command')
-  async handleCommand(client: Socket, payload: { computerId: string; appName: string, method:string }) {
-    const result = this.agentGateway.sendCommandToAgent(payload.computerId, { method: payload.method, appName: payload.appName });
-    this.commands.set(`${payload.computerId}_${payload.method}_${payload.appName}`, client);
+  async handleCommand(client: Socket, payload: { computerId: string; name: string, command:string }) {
+    const result = this.agentGateway.sendCommandToAgent(payload.computerId, { command: payload.command, name: payload.name });
+    this.commands.set(`${payload.computerId}_${payload.command}_${payload.name}`, client);
     console.log(result);
   }
 
-  async responseCommand(computerId:string, method: string, appName: string, data: any) {
-    console.log('frontendga yuborish: ', `${computerId}_${method}_${appName}` );
-    this.commands.get(`${computerId}_${method}_${appName}`)?.emit('data', data);
+  async responseCommand(computerId:string, data: any) {
+    console.log('frontendga yuborish: ', `${computerId}_${data.command}_${data.name}: ${data.status}` );
+    this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
   // @SubscribeMessage('delete_app')

@@ -38,12 +38,12 @@ export class AgentsController {
     return res.status(200).json(result);
   }
 
-  @Get('application/download/:filename')
+  @Get('application/download/:appName')
   @UseGuards(AgentGuard)
   @ApiBearerAuth()
   @ApiParam({ name: 'appName', required: true, example: 'putty' })
   downloadFile(
-    @Param('filename') filename: string,
+    @Param('appName') filename: string,
     @Res() res: Response
   ) {
     const filePath = join(process.cwd(), 'uploads', 'apps', filename, 'app.exe');

@@ -12,7 +12,7 @@ import { forwardRef, Inject, UseGuards } from '@nestjs/common';
 // import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
 import { JwtService } from '@nestjs/jwt';
 import { IPayloadAgent } from 'src/comman/types';
-import { JWT_SECRET } from 'src/config/env';
+import { AGENT_TOKEN_SECRET, JWT_SECRET } from 'src/config/env';
 import { WsException } from '@nestjs/websockets';
 import { AgentGuard } from 'src/comman/guards/agent.guard';
 import { FrontendGateway } from '../../computer/gateway/computer.gateway';
@@ -48,7 +48,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         try {
-            const decoded: IPayloadAgent = this.jwtService.verify(token, { secret: JWT_SECRET });
+            const decoded: IPayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
             const payload: IPayloadAgent = {
                 computerId: decoded.computerId,
                 key: decoded.key,
@@ -86,7 +86,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
 
-    @SubscribeMessage('deleted_app')
+    @SubscribeMessage('response')
     async deletedApp(
         socket: Socket,
         data: { command: string; name: string, status: string }
@@ -95,58 +95,41 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         for (const [key, _socket] of this.computerIdAndSocket) {
             if (_socket === socket) {
 
-                this.frondendSocket.responseCommand(key, 'delete_app', data.name, data)
-                console.log("delete buyrug'idan qaytgan data:", data);
+                this.frondendSocket.responseCommand(key, data)
+                // console.log("delete buyrug'idan qaytgan data:", data);
                 break;
             }
         }
     }
 
-    @SubscribeMessage('installed_app')
-    async installedApp(
-        socket: Socket,
-        data: { command: string; name: string, status: string }
-    ) {
-        for (const [key, _socket] of this.computerIdAndSocket) {
-            if (_socket === socket) {
-                this.frondendSocket.responseCommand(key, 'install_app', data.name, data)
-                console.log("install buyrug'idan qaytgan data:", data);
-                break;
-            }
-        }
-    }
+    // @SubscribeMessage('installed_app')
+    // async installedApp(
+    //     socket: Socket,
+    //     data: { command: string; name: string, status: string }
+    // ) {
+    //     for (const [key, _socket] of this.computerIdAndSocket) {
+    //         if (_socket === socket) {
+    //             this.frondendSocket.responseCommand(key, data)
+    //             // console.log("install buyrug'idan qaytgan data:", data);
+    //             break;
+    //         }
+    //     }
+    // }
 
+    // @SubscribeMessage('update_app')
+    // async handleConnect(socket: Socket, data: { productId: string }) {
+    // }
 
-    @SubscribeMessage('update_app')
-    async handleConnect(socket: Socket, data: { productId: string }) {
-    }
-
-    sendCommandToAgent(computerId: string, commandData: { method: string; appName: string }): string {
+    sendCommandToAgent(computerId: string, commandData: { command: string; name: string }): string {
         const socket = this.computerIdAndSocket.get(computerId);
         if (socket) {
-            if (commandData.method === 'delete_app') {
-                socket.emit('delete_app', {
-                    name: commandData.appName
-                });
-                return `buytuq yuborildi`;
-            } else if (commandData.method === 'install_app') {
-                socket.emit('install_app', {
-                    name: commandData.appName
-                });
-                return `buytuq yuborildi`;
-            } else {
-                return "boshqa method";
-            }
+            socket.emit('command', commandData);
+            // console.log('coputerId: ', computerId, '  commandData: ', commandData);
+            return `buytuq yuborildi`;
         } else {
             return 'computer tarmoqda emas. keyinroq';
             // keyinroq ulanganda bu buyruqni yuborish uchun saqlab qolish kerak
         }
-        // const agentSocket = this.agents.get(agentId);
-        // if (agentSocket) {
-        //     agentSocket.emit('execute', { command });
-        //     return true;
-        // }
-        // return false;
     }
 
 }
