@@ -14,7 +14,7 @@ import { AgentGateway } from '../../agent/gateway/agent.gateway';
 @WebSocketGateway(3006, { cors: { origin: '*' } }) // Frontend uchun socket
 export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
-  private commands = new Map<string, Socket>()
+  private commands = new Map<string, Socket>();
 
   constructor(
     @Inject(forwardRef(() => AgentGateway))
@@ -32,26 +32,32 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   // **Frontend buyruq jo‘natganda agentga uzatish**
   @SubscribeMessage('command')
-  async handleCommand(client: Socket, payload: { computerId: string; name: string, command:string }) {
+  async handleCommand(client: Socket, payload: { computerId: string; name: string, command: string }) {
     const result = this.agentGateway.sendCommandToAgent(payload.computerId, { command: payload.command, name: payload.name });
-    this.commands.set(`${payload.computerId}_${payload.command}_${payload.name}`, client);
     console.log(result);
+    if(result === 'buytuq yuborildi') {
+      this.commands.set(`${payload.computerId}_${payload.command}_${payload.name}`, client);
+      setTimeout(() => { this.commands.delete(`${payload.computerId}_${payload.command}_${payload.name}`); }, 5 * 60 * 1000)
+    }
   }
 
   @SubscribeMessage('deleteAgent')
   async _deleteAgent(client: Socket, payload: { computerId: string }) {
     const result = this.agentGateway.deleteAgent(payload.computerId);
-    this.commands.set(`${payload.computerId}_deleteAgent`, client);
     console.log(result);
+    if(result === "agnetni o'chirish buytuq yuborildi") {
+      this.commands.set(`${payload.computerId}_deleteAgent`, client);
+      setTimeout(() => { this.commands.delete(`${payload.computerId}_deleteAgent`); }, 5 * 60 * 1000)
+    }
   }
 
-  async responseCommand(computerId:string, data: any) {
-    console.log('frontendga yuborish: ', `${computerId}_${data.command}_${data.name}: ${data.status}` );
+  async responseCommand(computerId: string, data: any) {
+    console.log('frontendga yuborish: ', `${computerId}_${data.command}_${data.name}: ${data.status}`);
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
   async deleteAgent(computerId: string, status: string) {
-    this.commands.get(`${computerId}__deleteAgent`)?.emit('deleteAgent', {computerId, status});
+    this.commands.get(`${computerId}_deleteAgent`)?.emit('deleteAgent', { computerId, status });
   }
 
   // @SubscribeMessage('delete_app')
