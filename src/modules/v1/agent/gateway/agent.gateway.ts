@@ -76,9 +76,9 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
     async handleDisconnect(socket: Socket) {
         console.log(`SocketClient uzildi: ${socket.id}`);
 
-        for (const [key, _socket] of this.computerIdAndSocket) {
+        for (const [computerId, _socket] of this.computerIdAndSocket) {
             if (_socket === socket) {
-                this.computerIdAndSocket.delete(key);
+                this.computerIdAndSocket.delete(computerId);
                 console.log('computerIdAndSocket.size: ', this.computerIdAndSocket.size);
                 break;
             }
@@ -92,33 +92,31 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: { command: string; name: string, status: string }
     ) {
         // console.log("delete buyrug'idan qaytgan data:", data);
-        for (const [key, _socket] of this.computerIdAndSocket) {
+        for (const [computerId, _socket] of this.computerIdAndSocket) {
             if (_socket === socket) {
 
-                this.frondendSocket.responseCommand(key, data)
+                this.frondendSocket.responseCommand(computerId, data)
                 // console.log("delete buyrug'idan qaytgan data:", data);
                 break;
             }
         }
     }
 
-    // @SubscribeMessage('installed_app')
-    // async installedApp(
-    //     socket: Socket,
-    //     data: { command: string; name: string, status: string }
-    // ) {
-    //     for (const [key, _socket] of this.computerIdAndSocket) {
-    //         if (_socket === socket) {
-    //             this.frondendSocket.responseCommand(key, data)
-    //             // console.log("install buyrug'idan qaytgan data:", data);
-    //             break;
-    //         }
-    //     }
-    // }
+    @SubscribeMessage('delete_agent')
+    async _deleteAgent(
+        socket: Socket,
+        data: { status: string }
+    ) {
+        // console.log("delete buyrug'idan qaytgan data:", data);
+        for (const [computerId, _socket] of this.computerIdAndSocket) {
+            if (_socket === socket) {
 
-    // @SubscribeMessage('update_app')
-    // async handleConnect(socket: Socket, data: { productId: string }) {
-    // }
+                this.frondendSocket.deleteAgent(computerId, data.status)
+                break;
+            }
+        }
+    }
+
 
     sendCommandToAgent(computerId: string, commandData: { command: string; name: string }): string {
         const socket = this.computerIdAndSocket.get(computerId);
@@ -126,6 +124,18 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
             socket.emit('command', commandData);
             // console.log('coputerId: ', computerId, '  commandData: ', commandData);
             return `buytuq yuborildi`;
+        } else {
+            return 'computer tarmoqda emas. keyinroq';
+            // keyinroq ulanganda bu buyruqni yuborish uchun saqlab qolish kerak
+        }
+    }
+
+    deleteAgent(computerId: string) {
+        const socket = this.computerIdAndSocket.get(computerId);
+        if (socket) {
+            socket.emit('delete_agent');
+            // console.log('coputerId: ', computerId, '  commandData: ', commandData);
+            return `agnetni o'chirish buytuq yuborildi`;
         } else {
             return 'computer tarmoqda emas. keyinroq';
             // keyinroq ulanganda bu buyruqni yuborish uchun saqlab qolish kerak

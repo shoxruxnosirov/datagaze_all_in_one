@@ -38,9 +38,20 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     console.log(result);
   }
 
+  @SubscribeMessage('deleteAgent')
+  async _deleteAgent(client: Socket, payload: { computerId: string }) {
+    const result = this.agentGateway.deleteAgent(payload.computerId);
+    this.commands.set(`${payload.computerId}_deleteAgent`, client);
+    console.log(result);
+  }
+
   async responseCommand(computerId:string, data: any) {
     console.log('frontendga yuborish: ', `${computerId}_${data.command}_${data.name}: ${data.status}` );
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
+  }
+
+  async deleteAgent(computerId: string, status: string) {
+    this.commands.get(`${computerId}__deleteAgent`)?.emit('deleteAgent', {computerId, status});
   }
 
   // @SubscribeMessage('delete_app')
