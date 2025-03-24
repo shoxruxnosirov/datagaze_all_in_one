@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { AgentsService } from "./agen.service";
+import { AgentsService } from "./agent.service";
 import { AgentsController } from "./agent.controller";
 
 import { DatabaseModule } from '../../../database/workWithDB/database.module';

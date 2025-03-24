@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Body, Param, Query, ParseUUIDPipe, Res, Req, UseGuards, NotFoundException } from "@nestjs/common";
-import { AgentsService } from "./agen.service";
+import { AgentsService } from "./agent.service";
 import { Computer } from "./entities/computer.model";
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 import { CreateComputerDto } from "./dto/computer";
