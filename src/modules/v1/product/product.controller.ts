@@ -77,6 +77,19 @@ export class ProductsController {
     res.status(201).json(data);
   }
 
+  @Delete(':productId')
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @ApiOperation({ summary: 'Delete product' })
+  @ApiBearerAuth()
+  @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
+  async deleteProduct(
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
+  ): Promise<IMessage> {
+    return this.productsService.deleteProduct(id);
+  }
+  
+
   @Delete(':productId/server')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)

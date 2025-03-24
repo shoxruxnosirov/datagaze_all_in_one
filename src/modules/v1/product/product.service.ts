@@ -68,6 +68,11 @@ export class ProductsService {
   > {
     return this.procuctRepository.deleteServerForProduct(id);
   }
+  async deleteProduct(
+    id: string
+  ): Promise<IMessage> {
+    return this.procuctRepository.deleteProduct(id);
+  }
 
   async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IMessage> {
     return this.procuctRepository.updateServerForProduct(productId, serverData);

@@ -256,6 +256,28 @@ export class ProductRepository {
     };
   }
 
+  async deleteProduct(
+    id: string
+  ): Promise<IMessage> {
+    const result = await this.knex('products').where({ id }).del().returning('*');
+
+    if (result.length === 0) {
+      throw new HttpException(
+        {
+          status: 'error',
+          message: 'Product not found'
+        },
+        HttpStatus.NOT_FOUND
+      )
+    }
+
+    return {
+      status: 'success',
+      message: 'remove product account successfull'
+    }
+  }
+
+
   async create(productData: any) {
     try {
       const [insertedId] = await this.knex('products').insert(productData).returning('id');
