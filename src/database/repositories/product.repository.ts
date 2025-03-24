@@ -28,7 +28,7 @@ export class ProductRepository {
       id: product.id,
       name: product.name,
       icon: product.icon,
-      version: product.version,
+      version: product.serverVersion,
       installed: product.serverId ? true : false,
 
       publisher: product.publisher,
