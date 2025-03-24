@@ -16,7 +16,7 @@ import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  async getAllProducts(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
+  async getAllProducts(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean, publisher: string, agentVersion: string, serverFileSize: string, agentFileSize: string })[]> {
     return (
       await this.knex('products')
         .leftJoin('servers', 'products.serverId', 'servers.id')
@@ -27,9 +27,14 @@ export class ProductRepository {
     ).map(product => ({
       id: product.id,
       name: product.name,
-      version: product.version,
       icon: product.icon,
+      version: product.version,
       installed: product.serverId ? true : false,
+
+      publisher: product.publisher,
+      agentVersion: product.agentVersion,
+      serverFileSize: product.serverFileSize,
+      agentFileSize: product.agentFileSize
     })
     );
   }

@@ -66,17 +66,17 @@ const db = Knex(knexConfig);
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('name').notNullable();
       table.text('icon').nullable();
+
       table.string('serverVersion').notNullable();
       table.string('agentVersion').notNullable();
 
       table.string('serverFilePath').notNullable();
       table.string('agentFilePath').notNullable();
-      // table.text('download_path').notNullable();
-
-      table.uuid('serverId').nullable().references('id').inTable('servers').onDelete('SET NULL');
-
+      
       table.integer('serverFileSize').notNullable();
       table.integer('agentFileSize').notNullable();
+      
+      table.uuid('serverId').nullable().references('id').inTable('servers').onDelete('SET NULL');
 
       table.string('publisher').notNullable();
 
@@ -87,6 +87,11 @@ const db = Knex(knexConfig);
       table.integer('requiredRam').defaultTo(16);
       table.integer('requiredStorage').defaultTo(500);
       table.integer('requiredNetwork').defaultTo(1);
+
+
+      table.text('installScript').nullable();
+      table.text('updateScript').nullable();
+      table.text('deleteScript').nullable();
 
       table.integer('computerCount').notNullable().defaultTo(0);
       table.timestamp('firstUploadAt').defaultTo(db.fn.now());

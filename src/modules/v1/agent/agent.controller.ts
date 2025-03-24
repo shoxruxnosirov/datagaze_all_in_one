@@ -46,7 +46,7 @@ export class AgentsController {
     @Param('filename') filename: string,
     @Res() res: Response
   ) {
-    const filePath = join(process.cwd(), 'apps', filename, 'app.exe');
+    const filePath = join(process.cwd(), 'uploads', 'apps', filename, 'app.exe');
 
     if (!existsSync(filePath)) {
       throw new NotFoundException(`❌ Fayl topilmadi: ${filename}`);

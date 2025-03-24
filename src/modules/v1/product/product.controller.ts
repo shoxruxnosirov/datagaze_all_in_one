@@ -28,7 +28,7 @@ export class ProductsController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Get all products' })
   @ApiBearerAuth()
-  async getAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
+  async getAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean, publisher: string, agentVersion: string, serverFileSize: string, agentFileSize: string })[]> {
     return this.productsService.findAll();
   }
 
@@ -72,54 +72,9 @@ export class ProductsController {
 
   @Post('upload')
   @UseInterceptors(BeforeUploadInterceptor, FileUploadInterceptor.getInterceptor())
-  async uploadFiles(@UploadedFiles() files, @Body() body: { name: string; publisher: string; serverVersion: string; agentVersion: string; installScript: string; updateScript: string; deleteScript: string }, @Req() req, @Res() res: Response) {
-
-    console.log('@Body() body: ', body);
-    
-    if (!files.icon || !files.server || !files.agent) {
-      return res.status(400).json({ message: '3 ta faylni ham jo‘nat!' });
-    }
-
-    const baseFolder = `./uploads/products/${body.name}`;
-    const serverFolder = `${baseFolder}/server/${body.serverVersion}`;
-    const agentFolder = `${baseFolder}/agent/${body.agentVersion}`;
-
-    if (!fs.existsSync(baseFolder)) fs.mkdirSync(baseFolder, { recursive: true });
-    if (!fs.existsSync(serverFolder)) fs.mkdirSync(serverFolder, { recursive: true });
-    if (!fs.existsSync(agentFolder)) fs.mkdirSync(agentFolder, { recursive: true });
-
-    fs.renameSync(files.server[0].path, `${serverFolder}/${files.server[0].filename}`);
-    fs.renameSync(files.agent[0].path, `${agentFolder}/${files.agent[0].filename}`);
-
-
-    // Fayl yo‘llari
-    const iconPath = `./uploads/icons/${files.icon[0].filename}`;
-    const serverFilePath = `./uploads/products/${body.name}/server/${body.serverVersion}/${files.server[0].filename}`;
-    const agentFilePath = `./uploads/products/${body.name}/agent/${body.agentVersion}/${files.agent[0].filename}`;
-
-    // Fayl hajmlari
-    // const iconSize = fs.statSync(`.${iconPath}`).size;
-    const serverFileSize = fs.statSync(`${serverFilePath}`).size;
-    const agentFileSize = fs.statSync(`${agentFilePath}`).size;
-
-    const dataToSave = {
-      name: body.name,
-      icon: iconPath,
-      serverVersion: body.serverVersion,
-      agentVersion: body.agentVersion,
-      serverFilePath,
-      serverFileSize,
-      agentFilePath,
-      agentFileSize,
-      publisher:body.publisher
-    };
-
-    const savedRecord = await this.productsService.saveData(dataToSave);
-
-    res.json({
-      message: 'Fayllar saqlandi!',
-      data: 'savedRecord',
-    });
+  async uploadFiles(@UploadedFiles() files, @Body() body: { name: string; publisher: string; serverVersion: string; agentVersion: string; installScript: string; updateScript: string; deleteScript: string }, @Res() res: Response): Promise<any> {
+    const data = await this.productsService.saveData(files, body);
+    res.status(201).json(data);
   }
 
   @Delete(':productId/server')

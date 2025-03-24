@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { KnexModule } from 'nestjs-knex';
 
+import { ServeStaticModule } from '@nestjs/serve-static';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminModule } from './modules/v1/admin/admin.module';
@@ -14,6 +16,7 @@ import { AgentsModule } from './modules/v1/agent/agent.module';
 import { AgentGateway } from './modules/v1/agent/gateway/agent.gateway';
 import { FrontendGateway } from './modules/v1/computer/gateway/computer.gateway';
 import { JwtService } from '@nestjs/jwt';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -28,6 +31,16 @@ import { JwtService } from '@nestjs/jwt';
         connection: knexConfig.connection,
       },
     }),
+    ServeStaticModule.forRoot(
+      {
+        rootPath: join(__dirname, '..', 'uploads', 'icons'),
+        serveRoot: '/icons',
+      },
+      // {
+      //   rootPath: join(__dirname, '..', 'uploads', 'apps'),
+      //   serveRoot: '/apps',
+      // }
+    ),
   ],
   controllers: [AppController],
   providers: [AppService, SshGateway, SshGatewayConnection, AgentGateway, FrontendGateway, JwtService],
