@@ -28,9 +28,8 @@ import {
   UpdateAdminProfileDto,
 } from './dto/update';
 import { AdminService } from './admin.service';
-import { IGuardRequest, IMessage, IMessageforLogin, ITokens } from 'src/comman/types';
+import { IGuardRequest, IMessage, IMessageforLogin, ITokens, Role } from 'src/comman/types';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
-import { Role } from 'src/comman/guards/roles.enum';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 import { CreateAdminDto } from './dto/register';
 import { LoginAdminDto } from './dto/login';

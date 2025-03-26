@@ -9,8 +9,7 @@ import { Reflector } from '@nestjs/core';
 
 import { JwtService } from '@nestjs/jwt';
 import { REFRESH_TOKEN_SECRET } from 'src/config/env';
-import { Role } from './roles.enum';
-import { IGuardRequest, IPayload } from '../types';
+import { IGuardRequest, IPayload, Role } from '../types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 
 @Injectable()

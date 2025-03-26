@@ -8,13 +8,12 @@ import {
   REFRESH_TOKEN_EXPIRATION,
   REFRESH_TOKEN_SECRET,
 } from 'src/config/env';
-import { UpdateAdminPasswordBySuperadminoDto, UpdateAdminPasswordDto, UpdateAdminProfileDto, } from 'src/modules/v1/admin/dto/update';
+import { UpdateAdminPasswordDto, UpdateAdminProfileDto, } from 'src/modules/v1/admin/dto/update';
 import { IMessage, IMessageforLogin, IPayload, ITokens } from 'src/comman/types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
-import { Role } from 'src/comman/guards/roles.enum';
 import { CreateAdminDto } from './dto/register';
 import { LoginAdminDto } from './dto/login';
-import { request } from 'express';
+// import { request } from 'express';
 
 @Injectable()
 export class AdminService {
