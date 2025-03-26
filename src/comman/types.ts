@@ -21,7 +21,6 @@ export enum Role {
   SUPER_ADMIN = 'superadmin',
 }
 
-
 export interface IAdmin extends Knex.QueryBuilder {
   id: string;
   name: string;
@@ -51,7 +50,6 @@ export interface IServer extends Knex.QueryBuilder {
   host: string;
   port: string;
   username: string;
-  // authType: AuthType;
   password?: string;
   privateKey?: string;
   // lastChecked: string;
@@ -81,23 +79,6 @@ export interface IRequestAgent extends Request {
   headers: ICustomHeaders;
 }
 
-
-// export interface IProduct {
-//   id: string;
-//   name: string;
-//   icon: string;
-//   version: string;
-//   fileUrl: string;
-//   size: number;
-//   downloadPath: string;
-//   company: string;
-//   description?: string;
-//   supportOS: string;
-//   requiredCpuCore: number;
-//   requiredCam: number;
-//   requiredStorage: number;
-//   requiredNetwork: number;
-// }
 export interface IProduct {
   id: string;
   name: string;
@@ -118,5 +99,4 @@ export interface IProduct {
   firstUploadAt: Date;
   lastUploadAt: Date;
 }
-
 

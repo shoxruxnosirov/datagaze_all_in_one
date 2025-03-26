@@ -5,19 +5,16 @@ import {
   ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
 
 import { JwtService } from '@nestjs/jwt';
 import { AGENT_TOKEN_SECRET } from 'src/config/env';
-import { Role } from './roles.enum';
-import { IGuardRequest, IPayload, IPayloadAgent, IRequestAgent } from '../types';
+import { IPayloadAgent, IRequestAgent } from '../types';
 
 @Injectable()
 export class AgentGuard implements CanActivate {
   constructor(
-    // private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<IRequestAgent>();

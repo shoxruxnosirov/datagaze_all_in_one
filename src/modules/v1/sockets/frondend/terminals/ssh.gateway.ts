@@ -1,0 +1,305 @@
+import {
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    // OnGatewayInit,
+    SubscribeMessage,
+    WebSocketGateway,
+    WebSocketServer,
+    // WsException,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { Client, Channel, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2';
+import { randomUUID } from 'crypto';
+import * as pty from 'node-pty';
+import { SshGatewayConnection } from './ssh.gatewayService';
+import { ConnectDto } from '../../../ssh/dto/dtos';
+import { ProductRepository } from 'src/database/repositories/product.repository';
+import { UseGuards } from '@nestjs/common';
+// import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
+import { IServer } from 'src/comman/types';
+import { ISession } from './session.interface';
+
+
+
+@WebSocketGateway({ cors: true })
+export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
+    @WebSocketServer() server: Server;
+
+    constructor(
+        private sshGatewayConn: SshGatewayConnection,
+        private productRepository: ProductRepository
+    ) { }
+
+    private sessions = new Map<string, ISession>();
+
+    // private prompt = `"\\x1b[A\\x1b[K\\x1b[01;32m$USER@$HOSTNAME\\x1b[00m:\\x1b[01;34m$(echo $PWD | sed "s|^$(eval echo ~$USER)|~|")\\x1b[00m\\x1b[37m$\\x1b[00m"`;
+
+    // @UseGuards(WebSocketRolesGuard)
+    async handleConnection(socket: Socket) {
+
+        // const token = socket.handshake.headers['authorization']; // Token olish
+        // const accountId = socket.handshake.headers['customaccountid']; // Custom header olish
+
+        // if (!token) {
+        //   console.log('Token yo‘q, chiqib ket!');
+        //   socket.disconnect();
+        //   return;
+        // }
+
+        // try {
+        //   const decoded = jwt.verify(token.replace('Bearer ', ''), 'secret-key'); 
+        //   console.log(`User ID: ${decoded.sub}, Account ID: ${accountId}`);
+        // } catch (err) {
+        //   console.log('Xato token, vassalom!');
+        //   socket.disconnect();
+        // }
+        // const adminId: string = socket.handshake.headers['adminId'].toString();
+        console.log(`SocketClient ulandi: ${socket.id}`);
+    }
+
+    async handleDisconnect(socket: Socket) {
+        console.log(`SocketClient uzildi: ${socket.id}`);
+
+        for (const [key, session] of this.sessions) {
+            if (session.socket === socket) {
+                session.shell?.end();
+                session.ptyTerm?.kill();
+                this.sessions.delete(key);
+                console.log('session.size: ', this.sessions.size);
+                // break;
+            }
+        }
+    }
+
+    @SubscribeMessage('open_own_terminal')
+    openTerminal(socket: Socket) {
+        const sessionId = randomUUID(); // Unikal ID yaratish
+        const session = {
+            socket,
+            shell: null,
+            ptyTerm: null,
+            // skipFunc: {
+            //     skipSlashNs: null,
+            //     skipData: null
+            // }
+        }
+        this.connectBackEndTerm(socket, sessionId, session);
+        this.sessions.set(sessionId, session);
+        socket.emit('open_terminal', { sessionId });
+    }
+
+    @SubscribeMessage('deploy_product')
+    async deployingProject(
+        socket: Socket,
+        config: { productId: string; serverCredentials: ConnectDto },
+    ) {
+        const { serverFilePath } = await this.productRepository.getProductForDeploy(config.productId);
+
+        const sessionId = randomUUID(); // Unikal ID yaratish
+        const conn: Client = new Client();
+        const session: ISession = {
+            socket,
+            shell: {
+                write() { },
+                end() {
+                    conn.end();
+                    console.log(" hali end tayinlanmagan ");
+                }
+            },
+            ptyTerm: null
+        };
+        this.sessions.set(sessionId, session);
+        try {
+            await this.sshGatewayConn.deployProject(
+                {
+                    localProjectPath: serverFilePath,
+                    serverCredentials: config.serverCredentials
+                },
+                {
+                    socket,
+                    conn,
+                    sessionId,
+                    session
+                }
+            );
+
+            await this.productRepository.addServerAndUpdateProduct(config.serverCredentials, config.productId);
+
+            this.connectShell(socket, conn, sessionId);
+        } catch (error) {
+            socket.emit('error', { sessionId, message: error.message });
+            console.log('gataway 136 error ', error);
+            return;
+        }
+
+    }
+
+    @SubscribeMessage('ssh_connect')
+    async handleConnect(socket: Socket, data: { productId: string }) {
+
+        const server: IServer = await this.productRepository.getServerCredentials(data.productId);
+        const sessionId = randomUUID();
+        const conn = new Client();
+
+        conn.on('ready', () => {
+            this.connectShell(socket, conn, sessionId);
+            socket.emit('open_terminal', { sessionId });
+        });
+        conn.connect({
+            host: server.host,
+            port: server.port,
+            username: server.username,
+            password: server.password,
+            privateKey: server.privateKey,
+        } as ConnectDto);
+    }
+
+    @SubscribeMessage('command')
+    handleCommand(socket: Socket, { sessionId, command }) {
+        const session = this.sessions.get(sessionId);
+        if (session) {
+            if (session.shell) {
+                // session.skipFunc.skipSlashNs?.(0);
+                // session.skipFunc.skipData?.(0);
+                session.shell.write(command);
+                // session.shell.write(`${command} ; echo -e ${this.prompt}\n`);
+            } else if (session.ptyTerm) {
+                session.ptyTerm.write(command);
+            } else {
+                socket.emit('error', { sessionId, message: 'terminal topilmadi...' });
+            }
+        } else {
+            socket.emit('error', { sessionId, message: 'SSH sessiya topilmadi' });
+        }
+    }
+
+    @SubscribeMessage('close_terminal')
+    handleSSHDisconnect(socket: Socket, data: { sessionId: string }) {
+        const session: ISession | undefined = this.sessions.get(data.sessionId);
+        if (session) {
+            session.shell?.end();
+            session.ptyTerm?.kill();
+            socket.emit('closed_terminal', { sessionId: data.sessionId });
+            this.sessions.delete(data.sessionId);
+            // socket.disconnect();
+            console.log(`terminal yopildi: ${data.sessionId}`);
+        }
+    }
+
+    private connectBackEndTerm(socket: Socket, sessionId: string, session: ISession) {
+        const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+        const term = pty.spawn(shell, [], {
+            name: 'xterm-color',
+            cols: 80,
+            rows: 20,
+            cwd: process.env.HOME,
+            env: process.env,
+        });
+
+
+        term.onData((data) => {
+            // console.log(data.toString());
+            socket.emit('data', { sessionId, output: data.toString() });
+        });
+
+        term.onExit(({ exitCode, signal }) => {
+            console.log(`Terminal exited with code: ${exitCode}, signal: ${signal}`);
+            socket.emit('closed_terminal', { sessionId, exitCode, signal });
+            term?.kill();
+            this.sessions.delete(sessionId);
+        });
+
+        session.ptyTerm = term;
+
+        // this.sessions.set(sessionId, {
+        //     socket,
+        //     shell: null,
+        //     ptyTerm: term,
+        //     skipFunc: {
+        //         skipSlashNs: null,
+        //         skipData: null
+        //     }
+        // });//, clearLine: null });
+    }
+
+    private connectShell(socket: Socket, conn: Client, sessionId: string) {
+        conn.shell(
+            {
+                term: 'xterm',
+                cols: 80,
+                rows: 20,
+                echo: false,
+                pty: false,
+                env: { LANG: 'en_US.UTF-8' },
+            },
+            (err: Error, stream: Channel) => {
+                if (err) {
+                    conn.end();
+                    socket.emit('error', { sessionId, message: err.message });
+                } else {
+                    // let skipSlashNsCount = 0;
+                    // let skipDataCount = 0;
+                    const session = {
+                        socket,
+                        shell: stream,
+                        ptyTerm: null,
+                        // skipFunc: {
+                        //     skipSlashNs: (value:number) => { skipSlashNsCount = value; },
+                        //     skipData: (value: number) => { skipDataCount = value; }
+                        // }
+                    }
+                    
+                    this.sessions.set(sessionId, session);
+
+                    // function _skipData(sessionId: string, output: string) {
+                    //     if (skipDataCount > 0) {
+                    //         skipDataCount--;
+                    //         return;
+                    //     } else {
+                    //         console.log(output);
+                    //         socket.emit('data', { sessionId, output });
+                    //     }
+                    // }
+
+                    stream.on('data', (data: Buffer) => {
+                        const output = data.toString();
+                        socket.emit('data', { sessionId, output });
+                        // if (skipSlashNsCount > 0) {
+                        //     if (output.includes('\n')) {
+                        //         const resposes = output.split('\n');
+                        //         if (resposes.length > skipSlashNsCount) {
+                        //             const respose = resposes.slice(skipSlashNsCount).join('\n');
+                        //             skipSlashNsCount = 0;
+                        //             _skipData(sessionId, respose);
+                        //         } else {
+                        //             skipSlashNsCount -= (resposes.length - 1);
+                        //         }
+                        //         // const lastIndex = output.lastIndexOf('\n');
+                        //         // socket.emit('data', { sessionId, output: `${_line}${output.slice(0, lastIndex)}` });
+                        //         // console.log(`${_line}${output.slice(0, lastIndex)}`); 
+                        //         // _line = output.slice(lastIndex + 1);   
+                        //     }
+                        // } else {
+                        //     _skipData(sessionId, output);
+                        //     // socket.emit('data', { sessionId, output });
+                        // }
+                    });
+
+                    stream.on('error', (err: Error) => {
+                        socket.emit('error', { sessionId, message: err.message });
+                    });
+
+                    stream.on('close', () => {
+                        // this.sessions.delete(sessionId);
+                        session.shell = null;
+                        socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
+                        conn.end();
+                        this.connectBackEndTerm(socket, sessionId, session);
+                    });
+
+                    socket.emit('alert', { sessionId, message: 'ssh Terminal ochildi' });
+                }
+            }
+        );
+    }
+}

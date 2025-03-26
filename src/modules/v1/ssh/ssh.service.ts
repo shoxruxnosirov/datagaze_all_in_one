@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 import { Response } from 'express';
-import { ConnectConfig } from 'ssh2';
 
 import { SshConnection } from './ssh.connection';
 import { SshRepository } from 'src/database/repositories/server.repository';
@@ -9,7 +8,6 @@ import { IMessage, IProduct, IServer } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from './dto/dtos';
 
-import { SshGateway } from './terminal/ssh.gateway';
 
 @Injectable()
 export class SshService {
