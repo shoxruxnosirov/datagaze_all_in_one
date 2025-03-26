@@ -128,7 +128,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             this.connectShell(socket, conn, sessionId);
         } catch (error) {
             socket.emit('error', { sessionId, message: error.message });
-            console.log('gataway 136 error ', error);
+            // console.log('gataway 136 error ', error);
             return;
         }
 
