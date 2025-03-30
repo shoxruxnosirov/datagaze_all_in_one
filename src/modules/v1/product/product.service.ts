@@ -1,9 +1,10 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { IMessage, IProduct, IServer } from 'src/comman/types';
+import { Message, Server, ProductList, ProductOne } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from '../ssh/dto/dtos';
 
 import * as fs from 'fs';
+import { CreateProductDto } from './dto/addProcuct.dto';
 
 @Injectable()
 export class ProductsService {
@@ -12,77 +13,38 @@ export class ProductsService {
   ) { }
 
 
-  async findAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean, publisher: string, agentVersion: string, serverFileSize: string, agentFileSize: string })[]> {
+  async findAll(): Promise<ProductList[]> {
     return this.procuctRepository.getAllProducts();
   }
 
   async findOne(
     id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-    } & (
-      | {
-        supportOS: string;
-        requiredCpuCore: number;
-        requiredRam: number;
-        requiredStorage: number;
-        requiredNetwork: number;
-      }
-      | {
-        computerCounts: number;
-        firstUploadAt?: Date;
-        lastUploadAt?: Date;
-        serverHost: string;
-      }
-    )
-  > {
+  ): Promise<ProductOne> {
     return this.procuctRepository.getProduct(id);
   }
 
   async deleteServerForProduct(
     id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-      supportOS: string;
-      requiredCpuCore: number;
-      requiredRam: number;
-      requiredStorage: number;
-      requiredNetwork: number;
-    }
-  > {
+  ): Promise<ProductOne> {
     return this.procuctRepository.deleteServerForProduct(id);
   }
   async deleteProduct(
     id: string
-  ): Promise<IMessage> {
+  ): Promise<Message> {
     return this.procuctRepository.deleteProduct(id);
   }
 
-  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IMessage> {
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<Message> {
     return this.procuctRepository.updateServerForProduct(productId, serverData);
   }
 
 
 
-  async saveData(files, body): Promise<any> {
+  async saveData(
+    files: { icon?: Express.Multer.File[]; server?: Express.Multer.File[]; agent?: Express.Multer.File[] },
+    body: CreateProductDto): Promise<Message & { id: string }> {
 
-    if (!files.icon || !files.server || !files.agent) {
+    if (!files.icon?.length || !files.server?.length || !files.agent?.length) {
       throw new HttpException(
         {
           status: 'error',

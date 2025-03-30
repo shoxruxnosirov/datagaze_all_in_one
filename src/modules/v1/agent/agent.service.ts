@@ -1,9 +1,5 @@
 import { Injectable, Inject, HttpStatus } from "@nestjs/common";
-import { Knex } from "knex";
-import { Computer } from "./entities/computer.model";
 import { ComputerRepository } from "src/database/repositories/computer.repository";
-import { IComputer } from "./interface/computer";
-import { IApplication } from "./interface/application";
 import { CreateComputerDto } from "./dto/computer";
 import { AGENT_TOKEN_SECRET } from "src/config/env";
 import { JwtService } from "@nestjs/jwt";

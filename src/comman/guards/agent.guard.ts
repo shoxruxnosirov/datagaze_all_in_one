@@ -8,7 +8,7 @@ import {
 
 import { JwtService } from '@nestjs/jwt';
 import { AGENT_TOKEN_SECRET } from 'src/config/env';
-import { IPayloadAgent, IRequestAgent } from '../types';
+import { PayloadAgent, RequestAgent } from '../types';
 
 @Injectable()
 export class AgentGuard implements CanActivate {
@@ -17,7 +17,7 @@ export class AgentGuard implements CanActivate {
   ) { }
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<IRequestAgent>();
+    const request = context.switchToHttp().getRequest<RequestAgent>();
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -25,8 +25,8 @@ export class AgentGuard implements CanActivate {
     }
 
     try {
-      const decoded: IPayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
-      const payload: IPayloadAgent = {
+      const decoded: PayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
+      const payload: PayloadAgent = {
         computerId: decoded.computerId,
         key: decoded.key,
       };

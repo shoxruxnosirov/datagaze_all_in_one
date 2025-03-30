@@ -8,10 +8,9 @@ import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
 import { Socket } from 'socket.io';
 
-import { IMessage, IServer } from 'src/comman/types';
+import { Message, Server, TerminalSession } from 'src/comman/types';
 import { ConnectDto } from '../../../ssh/dto/dtos';
 import { WsException } from '@nestjs/websockets';
-import { ISession } from './session.interface';
 
 @Injectable()
 export class SshGatewayConnection {
@@ -26,19 +25,30 @@ export class SshGatewayConnection {
             socket: Socket,
             conn: Client,
             sessionId: string,
-            session: ISession
+            session: TerminalSession
         }
     ): Promise<void> {
         // console.log('connectData: ', connectConfig);
         const { socket, conn, sessionId, session } = term;
 
         return new Promise((resolve, reject) => {
+            session.shell.end = () => {
+                conn.end();
+                reject(
+                    new WsException('connection jarayonda to\'xtatildi')
+                )
+            }
             conn.on('ready', () => {
                 // socket.emit('alert', {
                 //     message: `${connectConfig.host}:${connectConfig.port} serverga ulandi\n`,
                 // });
                 socket.emit('open_terminal', { sessionId });
                 resolve();
+            });
+
+            conn.on('timeout', () => {
+                console.error('⏳ SSH ulanish timeout bo‘ldi');
+                reject(new WsException('SSH timeout'));
             });
 
             conn.on('error', (err: Error) => {
@@ -93,16 +103,17 @@ export class SshGatewayConnection {
             socket: Socket,
             conn: Client,
             sessionId: string,
-            session: ISession
-        }
+            session: TerminalSession
+        },
+        installScript?: string
     ): Promise<void> {
         // const { socket, conn, sessionId, session } = term;
         await this.connectToServer(config.serverCredentials, term);
+
         const osType = await this.findOsType(term);
         // await this.uploadAndInstallNodeJS(conn, osType, socket, sessionId);
-        // const startCommand: string = 'npm run start'; //'config.startCommand'
         // // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath, sessionId);
-        await this.uploadProduct(config.localProjectPath, osType, term); // startCommand);
+        await this.uploadProduct(config.localProjectPath, osType, term, installScript); // startCommand);
         // await this.disconnectFromServer(conn, socket);
         term.socket.emit('data', { sessionId: term.sessionId, output: 'terminaldan foydalnishing mumkin!\r\n' });
     }
@@ -111,10 +122,19 @@ export class SshGatewayConnection {
         socket: Socket,
         conn: Client,
         sessionId: string,
-        session: ISession
+        session: TerminalSession
     }): Promise<string> {
         const { socket, conn, sessionId, session } = term;
         return new Promise((resolve, reject) => {
+            session.shell.end = () => {
+                conn.end();
+                reject(
+                    new WsException(
+                        `Ulanilgan server OS turini aniqlashda  to\'xtatildi`,
+                    ),
+                )
+            }
+
             conn.exec(
                 'uname -s 2>/dev/null || systeminfo | findstr /B /C:"OS Name"',
                 (err: Error, stream: ClientChannel) => {
@@ -136,8 +156,8 @@ export class SshGatewayConnection {
                             stream.destroy();
                         }
                         conn.end();
-                        socket.emit('alert', { sessionId, message: 'Jarayon zo‘rlik bilan to‘xtatildi!' });
-                        reject('stopped');
+                        socket.emit('alert', { sessionId, message: 'os turni anilqlashda execda to\'xtatildi!' });
+                        reject(new WsException(`Ulanilgan server OS turini aniqlashda exec da to\'xtatildi`));
                     }
 
                     let osType = '';
@@ -352,13 +372,20 @@ export class SshGatewayConnection {
             socket: Socket,
             conn: Client,
             sessionId: string,
-            session: ISession
-        }
+            session: TerminalSession
+        },
+        installScript?: string
     ): Promise<string> {
         const { socket, conn, sessionId, session } = term;
         return new Promise((resolve, reject) => {
             let remoteFile: string = '';
             // let remoteProjectPath: string = '';
+
+            session.shell.end = () => {
+                conn.end();
+                console.log(`Product uploads o'tish jarayonidan oldin to\'xtatildi`);
+                reject(new WsException(`Product uploads o'tish jarayonidan oldin to\'xtatildi`));
+            }
 
             if (osType === 'Windows') {
                 remoteFile = 'C:\\Users\\Administrator\\Downloads\\' + path.basename(localProjectPath);
@@ -380,7 +407,7 @@ export class SshGatewayConnection {
                     });
                     // socket.disconnect();
                     // reject('Product uploads SFTP err');
-                    reject(new WsException(`Product uploads SFTP ulanish xatosi err: ${err.message}\n`));
+                    reject(new WsException(`Product uploads SFTP ulanish xatosi err: ${err.message}`));
                 }
 
                 session.shell.end = async () => {
@@ -410,7 +437,7 @@ export class SshGatewayConnection {
                     writeStream.destroy();
                     await this.deleteRemoteFile(sftp, remoteFile);
                     sftp.end();
-                    reject('stopped');
+                    reject(new WsException(`Product uploads o'tish jarayonida to\'xtatildi`));
                 }
 
                 const fileSize = fs.statSync(localProjectPath).size;
@@ -440,7 +467,7 @@ export class SshGatewayConnection {
                     filledLength = Math.round((+progress / 100) * barLength);
                     progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
 
-                    // console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
+                    console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
                     // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
 
                     socket.emit('uploading', { sessionId, eventName: "Product uploading", progress });
@@ -510,51 +537,67 @@ export class SshGatewayConnection {
 
                     // const notExec = ' ';
 
-                    // notExec || conn.exec(
-                    //     osType === 'Linux' ? linuxCommands : windowsCommands,
-                    //     (err: Error, stream: ClientChannel) => {
-                    //         if (err) {
-                    //             socket.emit('error', { message: `Productni arxivdan ochishda Error: ${err.message}\n` });
-                    //             // socket.disconnect();
-                    //             reject(
-                    //                 new WsException(
-                    //                     `Productni arxivdan ochishda xato yuzaga keldi err: ${err.message}`,
-                    //                 ),
-                    //             );
-                    //         }
+                    conn.exec(
+                        installScript, // osType === 'Linux' ? linuxCommands : windowsCommands,
+                        (err: Error, stream: ClientChannel) => {
+                            if (err) {
+                                socket.emit('error', { sessionId, message: `Productni arxivdan ochishda Error: ${err.message}\n` });
+                                // socket.disconnect();
+                                reject(
+                                    new WsException(
+                                        'installing da xatolik?'
+                                        // `Productni arxivdan ochishda xato yuzaga keldi err: ${err.message}`,
+                                    )
+                                );
+                            }
+                            session.shell.end = () => {
+                                conn.exec(osType === 'windows' ? `powershell -Command "Remove-Item -Path '${remoteFile}' -Force"` : `sudo rm -f "${remoteFile}"`, (err: Error, stream: SFTPWrapper) => {
 
-                    //         stream.on('data', (data: Buffer) => {
-                    //             socket.emit('data', { sessionId, output: `${data.toString()}` });
-                    //             console.log('📌 Output (product arxivdan ochish):', data.toString());
-                    //         });
-                    //         stream.stderr.on('data', (data: Buffer) => {
-                    //             const errorMsg = data.toString();
-                    //             console.error('⚠️ Xato:', errorMsg);
+                                    if (err) {
+                                        // resolve qilib jarayonni ushlab qolish kerakdir balki
+                                        reject(
+                                            new WsException(
+                                                `installing jarayonini to\'xtatishda xatolik: ${err.message}`
+                                            )
+                                        );
+                                    }
+                                })
+                                reject('stopped');
+                            }
+                            stream.on('data', (data: Buffer) => {
+                                const formattedData = data.toString();//.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                                socket.emit('data', { sessionId, output: formattedData });
+                                console.log('📌 Output (product arxivdan ochish):', data.toString());
+                            });
+                            stream.stderr.on('data', (data: Buffer) => {
+                                const errorMsg = data.toString();
+                                console.error('⚠️ Xato:', errorMsg);
 
-                    //             // Agar jiddiy xatolik bo‘lsa, jarayonni to‘xtatamiz
-                    //             if (
-                    //                 errorMsg.includes('command not found') ||
-                    //                 errorMsg.includes('Permission denied')
-                    //             ) {
-                    //                 socket.emit('error', { message: `Product arxivdan ochish Error: ${err.message}\n` });
-                    //                 // socket.disconnect();
-                    //                 reject(
-                    //                     new WsException(
-                    //                         `productni arxivdan ochishda stream.stder.on err: ${err.message}`,
-                    //                     ),
-                    //                 );
-                    //             } else {
-                    //                 socket.emit('alert', { message: `Product arxivdan ochishda warring: ${err.message}\n` });
-                    //             }
-                    //         });
+                                // Agar jiddiy xatolik bo‘lsa, jarayonni to‘xtatamiz
+                                if (
+                                    errorMsg.includes('command not found') ||
+                                    errorMsg.includes('Permission denied')
+                                ) {
+                                    socket.emit('error', { message: `Product arxivdan ochish Error: ${err.message}\n` });
+                                    // socket.disconnect();
+                                    reject(
+                                        new WsException(
+                                            `productni arxivdan ochishda stream.stder.on err: ${err.message}`,
+                                        )
+                                    );
+                                } else {
+                                    socket.emit('alert', { message: `Product arxivdan ochishda warring: ${err.message}\n` });
+                                }
+                            });
 
-                    //         stream.on('close', () => {
-                    //             console.log(`\x1b[A\x1b[KProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m`);
-                    //             socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m` });
-                    //             resolve('success');
-                    //         });
-                    //     },
-                    // );
+                            stream.on('close', () => {
+                                // console.log(`\x1b[A\x1b[KProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m`);
+                                // socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m` });
+                                resolve('success');
+                            });
+                        },
+                    );
+
                 });
 
                 // ✅ Xatolik yuz bersa oqimni yopish
@@ -573,7 +616,7 @@ export class SshGatewayConnection {
     private async deleteRemoteFile(sftp: SFTPWrapper, remoteFilePath: string) {
         if (remoteFilePath) {
             return new Promise<void>((resolve, reject) => {
-                sftp.unlink(remoteFilePath, (err) => {
+                sftp.unlink(remoteFilePath, (err: Error) => {
                     if (err) {
                         console.error(`Error deleting file ${remoteFilePath}:`, err);
                         reject(err);

@@ -4,7 +4,7 @@ import * as path from 'path';
 import { Writable } from 'stream';
 import { Client, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2';
 
-import { IMessage, IServer } from 'src/comman/types';
+import { Message, Server } from 'src/comman/types';
 import { ConnectDto } from './dto/dtos';
 import { Response } from 'express';
 import { Readable } from 'stream';
@@ -42,7 +42,7 @@ export class SshConnection {
     });
   }
 
-  private async disconnectFromServer(conn: Client, res: Response): Promise<IMessage> {
+  private async disconnectFromServer(conn: Client, res: Response): Promise<Message> {
     return new Promise((resolve, reject) => {
       conn.removeAllListeners('error');
       conn.on('close', () => {

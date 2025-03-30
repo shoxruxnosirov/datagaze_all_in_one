@@ -48,7 +48,7 @@
 <body>
     <!-- Deploy Form -->
     <div>
-        <input type="text" id="productId" placeholder="Product ID" value="740c0898-6bb6-4257-b8a8-aab505fb62a0"><br>
+        <input type="text" id="productId" placeholder="Product ID" value="92549ffe-c8ba-45a7-9697-7013b50247bf"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
         <input type="text" id="port" placeholder="Port" value="22"><br>
         <input type="text" id="username" placeholder="Username" value="root"><br>
@@ -59,7 +59,7 @@
     <!-- Go to Server Form -->
     <div>
         <input type="text" id="serverProductId" placeholder="Product ID"
-            value="740c0898-6bb6-4257-b8a8-aab505fb62a0"><br>
+            value="92549ffe-c8ba-45a7-9697-7013b50247bf"><br>
         <button onclick="goToServer()">Go To Server</button>
     </div>
     <br>
@@ -75,7 +75,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
+                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
                     extraHeaders: {
                         transports: ['websocket'],
                         // Authorization: `Bearer ${sean.jwtToken}`,
@@ -164,6 +164,7 @@
             document.body.appendChild(terminalWrapper);
 
             let term = new Terminal({
+                convertEol: true,
                 cursorBlink: true,     // Blinking cursor
                 rows: 20,              // Qatorlar soni
                 cols: 80,              // Ustunlar soni

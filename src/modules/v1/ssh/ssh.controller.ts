@@ -9,7 +9,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 
 import { ConnectDto } from './dto/dtos';
 import { SshService } from './ssh.service';
-import { IMessage, IProduct, Role } from 'src/comman/types';
+import { Role } from 'src/comman/types';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 
@@ -48,36 +48,4 @@ export class SshController {
     await this.sshService.deployProject(data, res);
   } 
 
-  // @Post('exec_comand')
-  // @UseGuards(RolesGuard)
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  // @ApiOperation({ summary: 'exec comand' })
-  // @ApiBearerAuth()
-  // @ApiBody({
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       serverId: { type: 'string', example: 'server_id', description: 'db dagi server id' },
-  //       comand: { default: 'ls -la ~', type: 'string', description: 'buyruq bajarish uchun comanda' },
-  //     }
-  //   }
-  // })
-  // async execComand(data: { serverId: string, comand: string }) {
-    
-  // }
-
-  // @Post('store-credentials')
-  // async storeSshCredentials(connectConfig: ConnectConfig) {
-  //   return this.sshService.storeSshCredentials(connectConfig);
-  // }
-
-  // @Get(':server_id/status')
-  // async checkSshStatus(@Param('server_id') serverId: string) {
-  //   return this.sshService.checkSshStatus(serverId);
-  // }
-
-  // @Get(':server_id/auto-connect')
-  // async autoLogin(@Param('server_id') serverId: string): Promise<IMessage> {
-  //   return this.sshService.autoConnect(serverId);
-  // }
 }

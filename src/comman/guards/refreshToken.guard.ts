@@ -9,7 +9,7 @@ import { Reflector } from '@nestjs/core';
 
 import { JwtService } from '@nestjs/jwt';
 import { REFRESH_TOKEN_SECRET } from 'src/config/env';
-import { IGuardRequest, IPayload, Role } from '../types';
+import { GuardRequest, Payload, Role } from '../types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 
 @Injectable()
@@ -26,7 +26,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest<IGuardRequest>();
+    const request = context.switchToHttp().getRequest<GuardRequest>();
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
@@ -34,7 +34,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
     }
 
     try {
-      const decoded: IPayload = this.jwtService.verify(token, { secret: REFRESH_TOKEN_SECRET });
+      const decoded: Payload = this.jwtService.verify(token, { secret: REFRESH_TOKEN_SECRET });
       const userRole: Role = decoded.role;
 
       if (userRole === Role.ADMIN) {
@@ -45,7 +45,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
         }
       }
 
-      const payload: IPayload = {
+      const payload: Payload = {
         id: decoded.id,
         role: decoded.role,
       };

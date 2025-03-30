@@ -4,6 +4,7 @@ export class ConnectDto {
   username: string;
   password?: string;
   privateKey?: string;
+  readyTimeout?: number;
 }
 
 

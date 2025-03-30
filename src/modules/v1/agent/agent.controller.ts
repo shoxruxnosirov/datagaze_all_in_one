@@ -6,9 +6,8 @@ import { CreateComputerDto } from "./dto/computer";
 import { Response } from "express";
 import { join } from 'path';
 import { createReadStream, statSync, existsSync } from 'fs';
-import { IApplication } from "./interface/application";
 import { ApplicationDto } from "./dto/application";
-import { IRequestAgent } from "src/comman/types";
+import { RequestAgent } from "src/comman/types";
 import { AgentGuard } from "src/comman/guards/agent.guard";
 
 @Controller("agent")
@@ -18,6 +17,7 @@ export class AgentsController {
   @Post('computer/register-or-update')
   async computerRegisterOrUpdate(@Body() computerData: CreateComputerDto, @Res() res: Response): Promise<Response> {
     const { token, status } = await this.agentsService.createOrUpdate(computerData);
+    console.log('agent: ', computerData.hostname, "\nstatus: ", status);
     return res.status(status === 'registered' ? 201 : 200).json({ token, status });
   }
 
@@ -25,14 +25,14 @@ export class AgentsController {
   @UseGuards(AgentGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'register or update applications' })
-  async applicationRegister(@Body() applications: ApplicationDto[], @Req() req: IRequestAgent, @Res() res: Response): Promise<Response> {
+  async applicationRegister(@Body() applications: ApplicationDto[], @Req() req: RequestAgent, @Res() res: Response): Promise<Response> {
     // console.log('computer: ', req.agent);
     const uniqueApps = Array.from(new Map(applications.map(app => {
       app.computerId = req.agent.computerId;
       delete app.id;
       return [app.name, app];
     })).values());
-    
+
     const result = await this.agentsService.applicationRegister(uniqueApps, req.agent.computerId);
 
     return res.status(200).json(result);
@@ -46,7 +46,7 @@ export class AgentsController {
     @Param('appName') filename: string,
     @Res() res: Response
   ) {
-    const filePath = join(process.cwd(), 'uploads', 'apps', filename, 'app.exe');
+    const filePath = join(process.cwd(), 'uploads', 'apps', filename);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException(`❌ Fayl topilmadi: ${filename}`);
@@ -66,26 +66,5 @@ export class AgentsController {
     const readStream = createReadStream(filePath, { highWaterMark: 16 * 1024 });
     readStream.pipe(res);
   }
-
-
-
-  // @Get()
-  // getAll() {
-  //   return this.computersService.getAllComputers();
-  // }
-
-  // @Get(":computerId")
-  // @ApiParam({ name: "computerId", type: "string", required: true, description: "Kompyuterning ID si" })
-  // getById(@Param("computerId", new ParseUUIDPipe({ version: '4' })) computerId: number) {
-  //   return this.computersService.getComputerById(computerId);
-  // }
-
-  // @Get(":computerId/applications")
-  // @ApiOperation({ summary: "Kompyuterga tegishli ilovalarni olish" })
-  // @ApiParam({ name: "computerId", type: "string", required: true, description: "Kompyuterning ID si" })
-  // @ApiQuery({ name: "page", type: Number, required: false, description: "Sahifa raqami (default: 1)" })
-  // getApplications(@Param("computerId", new ParseUUIDPipe({ version: '4' })) computerId: string, @Query('page') page?: number,) {  
-  //   return this.computersService.getApplications(computerId, page ?? 1);
-  // }
 
 }

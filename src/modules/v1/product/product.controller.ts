@@ -1,26 +1,20 @@
 import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, ParseUUIDPipe, UploadedFiles, Res, UseInterceptors, Req } from '@nestjs/common';
 import { ProductsService } from './product.service';
-import { IMessage, IProduct, Role } from 'src/comman/types';
-// import { SshConnection } from '../ssh/ssh.connection';
+import { Message, ProductList, ProductOne, Role } from 'src/comman/types';
 import { Roles } from 'src/comman/decorators/roles.decorator';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
 import { ConnectDto } from '../ssh/dto/dtos';
 import { Response } from 'express';
 
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
-
-import * as fs from 'fs';
 import { FileUploadInterceptor } from 'src/comman/interceptors/product-upload.interceptor';
-import { BeforeUploadInterceptor } from 'src/comman/interceptors/beforeUpload.interceptor';
+import { CreateProductDtoForSwagger } from './dto/add.productForSwagger.dto';
+import { CreateProductDto } from './dto/addProcuct.dto';
 
 @Controller('api/products')
 export class ProductsController {
   constructor(
     private readonly productsService: ProductsService,
-    // private readonly sshConnection: SshConnection
   ) { }
 
   @Get()
@@ -28,101 +22,70 @@ export class ProductsController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'Get all products' })
   @ApiBearerAuth()
-  async getAll(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean, publisher: string, agentVersion: string, serverFileSize: string, agentFileSize: string })[]> {
+  async getAll(): Promise<ProductList[]> {
     return this.productsService.findAll();
   }
 
   @Get(':id')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'Get product' })
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get product' })
   @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async getOne(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-    } & (
-      | {
-        supportOS: string;
-        requiredCpuCore: number;
-        requiredRam: number;
-        requiredStorage: number;
-        requiredNetwork: number;
-      }
-      | {
-        computerCounts: number;
-        firstUploadAt?: Date;
-        lastUploadAt?: Date;
-        serverHost: string;
-      }
-    )
-  > {
+  ): Promise<ProductOne> {
     return this.productsService.findOne(id);
   };
 
 
-  @Post('upload')
-  @UseInterceptors(BeforeUploadInterceptor, FileUploadInterceptor.getInterceptor())
-  async uploadFiles(@UploadedFiles() files, @Body() body: { name: string; publisher: string; serverVersion: string; agentVersion: string; installScript: string; updateScript: string; deleteScript: string }, @Res() res: Response): Promise<any> {
+  @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Upload product files and metadata' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateProductDtoForSwagger })
+  @UseInterceptors(FileUploadInterceptor.getInterceptor())
+  async uploadFiles(
+    @UploadedFiles() files: { icon?: Express.Multer.File[]; server?: Express.Multer.File[]; agent?: Express.Multer.File[] },
+    @Body() body: CreateProductDto,
+    @Res() res: Response
+  ): Promise<Response> {
     const data = await this.productsService.saveData(files, body);
-    res.status(201).json(data);
+    return res.status(201).json(data);
   }
 
   @Delete(':productId')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'Delete product' })
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete product' })
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async deleteProduct(
     @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
-  ): Promise<IMessage> {
+  ): Promise<Message> {
     return this.productsService.deleteProduct(id);
   }
-  
+
 
   @Delete(':productId/server')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'Delete server for product' })
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete server for product' })
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async deleteServerForProduct(
     @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-      supportOS: string;
-      requiredCpuCore: number;
-      requiredRam: number;
-      requiredStorage: number;
-      requiredNetwork: number;
-    }
-  > {
+  ): Promise<ProductOne> {
     return this.productsService.deleteServerForProduct(id);
   }
 
   @Put(':productId/server')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @ApiOperation({ summary: 'Update server for product' })
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update server for product' })
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   @ApiBody({
     schema: {
@@ -138,28 +101,8 @@ export class ProductsController {
   async updateServerForProduct(
     @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
     @Body() serverData: ConnectDto
-  ): Promise<IMessage> {
+  ): Promise<Message> {
     return this.productsService.updateServerForProduct(productId, serverData);
   }
 
-
-  // @Post()
-  // async transferFile(@Body() body: { localPath: string; remotePath: string }): Promise<string> {
-  //   return this.sshConnection.cpFile(body.localPath, body.remotePath);
-  // }
-
-  // @Put(':id')
-  // async update(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Body() productData: Product): Promise<Product> {
-  //   return this.productsService.update(id, productData);
-  // }
-
-  // @Delete(':id')
-  // @UseGuards(RolesGuard)
-  // @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  // @ApiOperation({ summary: 'Delete procuct' })
-  // @ApiBearerAuth()
-  // @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
-  // async delete(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string): Promise<Product> {
-  //   return this.productsService.delete(id);
-  // }
 }

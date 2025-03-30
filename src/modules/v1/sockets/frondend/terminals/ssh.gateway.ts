@@ -16,8 +16,7 @@ import { ConnectDto } from '../../../ssh/dto/dtos';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { UseGuards } from '@nestjs/common';
 // import { WebSocketRolesGuard } from 'src/comman/guards/socket.roles.guard';
-import { IServer } from 'src/comman/types';
-import { ISession } from './session.interface';
+import { Server as ServerCredential , TerminalSession} from 'src/comman/types';
 
 
 
@@ -30,7 +29,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         private productRepository: ProductRepository
     ) { }
 
-    private sessions = new Map<string, ISession>();
+    private sessions = new Map<string, TerminalSession>();
 
     // private prompt = `"\\x1b[A\\x1b[K\\x1b[01;32m$USER@$HOSTNAME\\x1b[00m:\\x1b[01;34m$(echo $PWD | sed "s|^$(eval echo ~$USER)|~|")\\x1b[00m\\x1b[37m$\\x1b[00m"`;
 
@@ -93,18 +92,25 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket: Socket,
         config: { productId: string; serverCredentials: ConnectDto },
     ) {
-        const { serverFilePath } = await this.productRepository.getProductForDeploy(config.productId);
+        config.serverCredentials.readyTimeout =  20000;
+        const { serverFilePath, installScript } = await this.productRepository.getProductForDeploy(config.productId);
 
         const sessionId = randomUUID(); // Unikal ID yaratish
         const conn: Client = new Client();
-        const session: ISession = {
+        const end = function () {
+            conn.end();
+            console.log(" hali end tayinlanmagan ");
+            // if (typeof end.reject === "function") { 
+            //     end.reject();
+            // }
+        }
+        // end.reject = null as null | (() => void);
+
+        const session: TerminalSession = {
             socket,
             shell: {
                 write() { },
-                end() {
-                    conn.end();
-                    console.log(" hali end tayinlanmagan ");
-                }
+                end,
             },
             ptyTerm: null
         };
@@ -120,15 +126,18 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                     conn,
                     sessionId,
                     session
-                }
+                },
+                installScript
             );
 
             await this.productRepository.addServerAndUpdateProduct(config.serverCredentials, config.productId);
 
-            this.connectShell(socket, conn, sessionId);
+            this.connectShell(socket, conn, sessionId, installScript);
+
         } catch (error) {
+            // if(error.message.includes())
             socket.emit('error', { sessionId, message: error.message });
-            // console.log('gataway 136 error ', error);
+            console.log('gataway 140 error ', error);
             return;
         }
 
@@ -137,7 +146,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @SubscribeMessage('ssh_connect')
     async handleConnect(socket: Socket, data: { productId: string }) {
 
-        const server: IServer = await this.productRepository.getServerCredentials(data.productId);
+        const server: ServerCredential = await this.productRepository.getServerCredentials(data.productId);
         const sessionId = randomUUID();
         const conn = new Client();
 
@@ -175,7 +184,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @SubscribeMessage('close_terminal')
     handleSSHDisconnect(socket: Socket, data: { sessionId: string }) {
-        const session: ISession | undefined = this.sessions.get(data.sessionId);
+        const session: TerminalSession | undefined = this.sessions.get(data.sessionId);
         if (session) {
             session.shell?.end();
             session.ptyTerm?.kill();
@@ -186,7 +195,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
     }
 
-    private connectBackEndTerm(socket: Socket, sessionId: string, session: ISession) {
+    private connectBackEndTerm(socket: Socket, sessionId: string, session: TerminalSession) {
         const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
         const term = pty.spawn(shell, [], {
             name: 'xterm-color',
@@ -222,7 +231,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // });//, clearLine: null });
     }
 
-    private connectShell(socket: Socket, conn: Client, sessionId: string) {
+    private connectShell(socket: Socket, conn: Client, sessionId: string, installScript?: string) {
         conn.shell(
             {
                 term: 'xterm',
@@ -239,6 +248,11 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                 } else {
                     // let skipSlashNsCount = 0;
                     // let skipDataCount = 0;
+                    // if(installScript) {
+                    //     console.log('insScr: ', installScript);
+                    //     stream.write(installScript + '\r\n');
+                    // }
+
                     const session = {
                         socket,
                         shell: stream,
@@ -248,7 +262,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
                         //     skipData: (value: number) => { skipDataCount = value; }
                         // }
                     }
-                    
+
                     this.sessions.set(sessionId, session);
 
                     // function _skipData(sessionId: string, output: string) {

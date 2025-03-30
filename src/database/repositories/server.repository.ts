@@ -10,7 +10,7 @@ import { Knex } from 'knex';
 import { ConnectConfig } from 'ssh2';
 
 
-import { AuthType, IProduct, IServer } from 'src/comman/types';
+import {Product, Server } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 // import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
@@ -27,8 +27,8 @@ export class SshRepository {
   //     return result;
 
   // }
-  async getSshStatus(serverId: string): Promise<IServer> {
-    const server: IServer | undefined = await this.knex<IServer>('servers').where({ id: serverId }).first();
+  async getSshStatus(serverId: string): Promise<Server> {
+    const server: Server | undefined = await this.knex<Server>('servers').where({ id: serverId }).first();
     if (!server) {
       throw new HttpException(
         {
@@ -47,8 +47,8 @@ export class SshRepository {
   //   return await this.knex<IServer>('Servers').where({ serverId, type: 'error' }).select('*');
   // }
 
-  async storeSshCredentials(connectConfig: ConnectDto): Promise<IServer> {
-    const serverData = await this.knex<IServer>('servers').insert(connectConfig).returning('*');
+  async storeSshCredentials(connectConfig: ConnectDto): Promise<Server> {
+    const serverData = await this.knex<Server>('servers').insert(connectConfig).returning('*');
     if (serverData.length !== 0) {
       return serverData[0];
     } else {
@@ -62,8 +62,8 @@ export class SshRepository {
     }
   }
 
-  async getServerData(serverId: string): Promise<IServer> {
-    const serverData: IServer | undefined = await this.knex<IServer>('servers').where({ id: serverId }).first();
+  async getServerData(serverId: string): Promise<Server> {
+    const serverData: Server | undefined = await this.knex<Server>('servers').where({ id: serverId }).first();
     if (serverData) {
       return serverData;
     } else {

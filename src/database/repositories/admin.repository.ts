@@ -12,7 +12,7 @@ import {
 import { Knex } from 'knex';
 import * as bcrypt from 'bcryptjs';
 
-import { IAdmin, IAdmin2, IMessage, IPayload } from 'src/comman/types';
+import { Admin, Admin2, Message, Payload } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { UpdateAdminProfileDto } from 'src/modules/v1/admin/dto/update';
 import { LoginAdminDto } from 'src/modules/v1/admin/dto/login';
@@ -23,8 +23,8 @@ import { CreateAdminDto } from 'src/modules/v1/admin/dto/register';
 export class AdminRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
 
-  async loginAdmin(admin: LoginAdminDto): Promise<IAdmin | undefined> {
-    const data: IAdmin = await this.knex('admins')
+  async loginAdmin(admin: LoginAdminDto): Promise<Admin> {
+    const data: Admin = await this.knex('admins')
       .select('*')
       .where({ username: admin.username })
       .first();
@@ -47,11 +47,11 @@ export class AdminRepository {
     return data;
   }
 
-  async createAdmin(admin: CreateAdminDto): Promise<IAdmin> {
+  async createAdmin(admin: CreateAdminDto): Promise<Admin> {
     try {
       const password = await this.hashPassword(admin.password);
       admin.password = password;
-      const result = await this.knex<IAdmin>('admins').insert(admin).returning('*');
+      const result = await this.knex<Admin>('admins').insert(admin).returning('*');
 
       if (result.length === 0) {
         throw new BadRequestException('Unexpected error: No result returned after insert.');
@@ -71,7 +71,7 @@ export class AdminRepository {
     }
   }
 
-  async getAllAdmins(): Promise<IAdmin2[]> {
+  async getAllAdmins(): Promise<Admin2[]> {
     try {
       const result = await this.knex('admins')
         .select(['id', 'name', 'username', 'email', 'createdAt'])
@@ -83,9 +83,9 @@ export class AdminRepository {
     }
   }
 
-  async getOneAdmin(id: string): Promise<IAdmin2> {
+  async getOneAdmin(id: string): Promise<Admin2> {
     try {
-      const result = await this.knex<IAdmin>('admins')
+      const result = await this.knex<Admin>('admins')
         .select(['id', 'name', 'username', 'email', 'createdAt'])
         .where({ id })
         .first();
@@ -137,9 +137,9 @@ export class AdminRepository {
 
   async updatePasswordByAdmin(
     data: { oldPassword: string; newPassword: string },
-    admin: IPayload,
-  ): Promise<IMessage> {
-    const existingAdmin: IAdmin = await this.knex('admins').where({ id: admin.id }).first();
+    admin: Payload,
+  ): Promise<Message> {
+    const existingAdmin: Admin = await this.knex('admins').where({ id: admin.id }).first();
 
     if (!existingAdmin) {
       throw new NotFoundException({
@@ -167,7 +167,7 @@ export class AdminRepository {
     };
   }
 
-  async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<IMessage> {
+  async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<Message> {
     if (updates.password) {
       updates.password = await this.hashPassword(updates.password);
     }
@@ -184,7 +184,7 @@ export class AdminRepository {
     };
   }
 
-  async deleteAdminBySuperadmin(id: string): Promise<IMessage> {
+  async deleteAdminBySuperadmin(id: string): Promise<Message> {
     const result = await this.knex('admins').where({ id }).del().returning('*');
 
     if (result.length === 0) {

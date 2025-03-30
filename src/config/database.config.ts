@@ -1,19 +1,19 @@
 import { Knex } from 'knex';
 
 const knexConfig: Knex.Config = {
-  client: 'pg', // PostgreSQL uchun
+  client: 'pg', 
   connection: {
     host: '127.0.0.1',
-    user: 'unknown', // PostgreSQL foydalanuvchi nomi
-    password: 'password123', // PostgreSQL paroli
-    database: 'datagaze', // Ma'lumotlar bazasi nomi
+    user: 'unknown', 
+    password: 'password123', 
+    database: 'datagaze',
   },
   migrations: {
-    directory: './src/database/migrations/v1', // Migratsiya fayllari joylashuvi
-    tableName: 'knex_migrations', // Migratsiyalar jadvali nomi
+    directory: './src/database/migrations/v1', 
+    tableName: 'knex_migrations',
   },
   seeds: {
-    directory: './src/database/seeds/v1', // Seed fayllari joylashuvi
+    directory: './src/database/seeds/v1', 
   },
 };
 

@@ -1,10 +1,9 @@
 import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { Knex } from "knex";
+import { Application, Computer, ComputerForList, ListWithPagination, NetworkAdapter } from "src/comman/types";
 import { KNEX_CONNECTION } from "src/database/workWithDB/database.module";
 import { ApplicationDto } from "src/modules/v1/agent/dto/application";
 import { CreateComputerDto } from "src/modules/v1/agent/dto/computer";
-import { IApplication } from "src/modules/v1/agent/interface/application";
-import { IComputer, IComputerForList, INetworkAdapter } from "src/modules/v1/agent/interface/computer";
 
 @Injectable()
 export class ComputerRepository {
@@ -13,17 +12,10 @@ export class ComputerRepository {
   async getAllComputers(
     page: number,
     pageSize: number
-  ): Promise<
-    {
-      data: IComputerForList[],
-      currentPage: number,
-      totalPages: number,
-      totalRecords: number
-    }
-  > {
+  ): Promise<ListWithPagination<ComputerForList>> {
     const offset = (page - 1) * pageSize;
     const computers: (
-      IComputerForList & { total_records?: number }
+      ComputerForList & { total_records?: number }
     )[] = await this.knex("computers")
       .select("id", "hostname", "operation_system", "network_adapters")
       .orderBy("created_at", "desc")
@@ -45,7 +37,7 @@ export class ComputerRepository {
 
     computers.forEach(computer => {
       const activeNetwork = computer.network_adapters?.find(
-        (networkAdapter: INetworkAdapter) => networkAdapter.available === "Up"
+        (networkAdapter: NetworkAdapter) => networkAdapter.available === "Up"
       );
 
       if (activeNetwork) {
@@ -56,6 +48,8 @@ export class ComputerRepository {
         const firstNetworkAdapter = computer.network_adapters?.[0];
         computer.ipAddress = firstNetworkAdapter ? firstNetworkAdapter.ip_address : undefined;
       }
+
+      computer.activity = 'Inactive';       // agent bilan kelishiladi
       delete computer.network_adapters;
       delete computer.total_records;
     });
@@ -68,7 +62,7 @@ export class ComputerRepository {
     };
   }
 
-  async getComputerById(id: number): Promise<IComputer> {
+  async getComputerById(id: number): Promise<Computer> {
     const computer = await this.knex("computers").where("id", id).first();
     if (!computer) {
       throw new HttpException("Computer not found", HttpStatus.NOT_FOUND);
@@ -81,18 +75,11 @@ export class ComputerRepository {
     computerId: string,
     page: number,
     pageSize: number
-  ): Promise<
-    {
-      data: IApplication[],
-      currentPage: number,
-      totalPages: number,
-      totalRecords: number
-    }
-  > {
+  ): Promise<ListWithPagination<Application> > {
     // pageSize = 1000;
     const offset = (page - 1) * pageSize;
 
-    const applications: (IApplication & { total_records?: number })[] = await this.knex("applications")
+    const applications: (Application & { total_records?: number })[] = await this.knex("applications")
       .select("version", "name", "size", "type", "installed_date")
       .where("computerId", computerId)
       .orderBy("installed_date", "desc")
