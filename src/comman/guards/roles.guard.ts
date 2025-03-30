@@ -37,10 +37,10 @@ export class RolesGuard implements CanActivate {
       const decoded: Payload = this.jwtService.verify(token, { secret: JWT_SECRET });
       const userRole: Role = decoded.role;
 
-      if(userRole === Role.ADMIN) {
+      if (userRole === Role.ADMIN) {
         try {
-          await this.adminRepository.getOneAdmin(decoded.id)
-        } catch(err) {
+          await this.adminRepository.getOneAdmin(decoded.id);
+        } catch (err) {
           throw new ForbiddenException('You do not have permission to access this resource');
         }
       }
@@ -56,7 +56,7 @@ export class RolesGuard implements CanActivate {
       }
       return true;
     } catch (err) {
-      if(err instanceof ForbiddenException) {
+      if (err instanceof ForbiddenException) {
         throw err;
       } else {
         throw new UnauthorizedException('Yaroqsiz token');

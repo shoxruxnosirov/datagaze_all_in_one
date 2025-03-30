@@ -1,4 +1,18 @@
-import { Controller, Get, Post, Body, Param, Put, Delete, UseGuards, ParseUUIDPipe, UploadedFiles, Res, UseInterceptors, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  UseGuards,
+  ParseUUIDPipe,
+  UploadedFiles,
+  Res,
+  UseInterceptors,
+  Req,
+} from '@nestjs/common';
 import { ProductsService } from './product.service';
 import { Message, ProductList, ProductOne, Role } from 'src/comman/types';
 import { Roles } from 'src/comman/decorators/roles.decorator';
@@ -13,9 +27,7 @@ import { CreateProductDto } from './dto/addProcuct.dto';
 
 @Controller('api/products')
 export class ProductsController {
-  constructor(
-    private readonly productsService: ProductsService,
-  ) { }
+  constructor(private readonly productsService: ProductsService) {}
 
   @Get()
   @UseGuards(RolesGuard)
@@ -32,12 +44,9 @@ export class ProductsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get product' })
   @ApiParam({ name: 'id', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
-  async getOne(
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string
-  ): Promise<ProductOne> {
+  async getOne(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string): Promise<ProductOne> {
     return this.productsService.findOne(id);
-  };
-
+  }
 
   @Post()
   @UseGuards(RolesGuard)
@@ -48,9 +57,14 @@ export class ProductsController {
   @ApiBody({ type: CreateProductDtoForSwagger })
   @UseInterceptors(FileUploadInterceptor.getInterceptor())
   async uploadFiles(
-    @UploadedFiles() files: { icon?: Express.Multer.File[]; server?: Express.Multer.File[]; agent?: Express.Multer.File[] },
+    @UploadedFiles()
+    files: {
+      icon?: Express.Multer.File[];
+      server?: Express.Multer.File[];
+      agent?: Express.Multer.File[];
+    },
     @Body() body: CreateProductDto,
-    @Res() res: Response
+    @Res() res: Response,
   ): Promise<Response> {
     const data = await this.productsService.saveData(files, body);
     return res.status(201).json(data);
@@ -63,11 +77,10 @@ export class ProductsController {
   @ApiOperation({ summary: 'Delete product' })
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async deleteProduct(
-    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string,
   ): Promise<Message> {
     return this.productsService.deleteProduct(id);
   }
-
 
   @Delete(':productId/server')
   @UseGuards(RolesGuard)
@@ -76,7 +89,7 @@ export class ProductsController {
   @ApiOperation({ summary: 'Delete server for product' })
   @ApiParam({ name: 'productId', required: true, example: '123e4567-e89b-12d3-a456-426614174000' })
   async deleteServerForProduct(
-    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string
+    @Param('productId', new ParseUUIDPipe({ version: '4' })) id: string,
   ): Promise<ProductOne> {
     return this.productsService.deleteServerForProduct(id);
   }
@@ -95,14 +108,13 @@ export class ProductsController {
         port: { default: '22', type: 'string', description: 'server port' },
         username: { default: 'ubuntu', type: 'string', description: 'server username' },
         password: { default: 'New_admin_pass_123', type: 'string', description: 'server password' },
-      }
+      },
     },
   })
   async updateServerForProduct(
     @Param('productId', new ParseUUIDPipe({ version: '4' })) productId: string,
-    @Body() serverData: ConnectDto
+    @Body() serverData: ConnectDto,
   ): Promise<Message> {
     return this.productsService.updateServerForProduct(productId, serverData);
   }
-
 }

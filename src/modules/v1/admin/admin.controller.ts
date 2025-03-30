@@ -14,17 +14,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiOperation,
-  ApiBearerAuth,
-  ApiBody,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
 
-import {
-  UpdateAdminPasswordDto,
-  UpdateAdminProfileDto,
-} from './dto/update';
+import { UpdateAdminPasswordDto, UpdateAdminProfileDto } from './dto/update';
 import { AdminService } from './admin.service';
 import { Admin2, GuardRequest, Message, MessageforLogin, Tokens, Role } from 'src/comman/types';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
@@ -35,7 +27,7 @@ import { RolesGuardForRefreshToken } from 'src/comman/guards/refreshToken.guard'
 
 @Controller('api/auth')
 export class AdminController {
-  constructor(private adminService: AdminService) { }
+  constructor(private adminService: AdminService) {}
 
   @Post('login')
   @ApiOperation({ summary: 'Login' })
@@ -77,8 +69,15 @@ export class AdminController {
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Get an admin by ID (Superadmin only)' })
   @ApiBearerAuth()
-  @ApiParam({ name: 'adminId', type: 'string', description: 'Admin UUID', example: '550e8400-e29b-41d4-a716-446655440000' })
-  async getOneAdmin(@Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string): Promise<Admin2> {
+  @ApiParam({
+    name: 'adminId',
+    type: 'string',
+    description: 'Admin UUID',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  async getOneAdmin(
+    @Param('adminId', new ParseUUIDPipe({ version: '4' })) id: string,
+  ): Promise<Admin2> {
     return this.adminService.getOneAdmin(id);
   }
 
@@ -91,11 +90,18 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-
-        name: { default: 'Adminjon Adminov Admin o\'g\'li', type: 'string', description: 'new admin full name' },
+        name: {
+          default: "Adminjon Adminov Admin o'g'li",
+          type: 'string',
+          description: 'new admin full name',
+        },
         username: { default: 'new_admin', type: 'string', description: 'new admin username' },
         email: { default: 'admin@gmail.com', type: 'string', description: 'new admin email' },
-        password: { default: 'New_admin_pass_123', type: 'string', description: 'new admin password' },
+        password: {
+          default: 'New_admin_pass_123',
+          type: 'string',
+          description: 'new admin password',
+        },
       },
       required: ['name', 'username', 'email', 'password'],
     },
@@ -126,10 +132,18 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-        username: { default: 'new_admin_1', type: 'string', description: 'Yangi foydalanuvchi nomi (ixtiyoriy)' },
+        username: {
+          default: 'new_admin_1',
+          type: 'string',
+          description: 'Yangi foydalanuvchi nomi (ixtiyoriy)',
+        },
         name: { default: 'admin', type: 'string', description: 'Foydalanuvchi ismi (ixtiyoriy)' },
-        email: { default: 'adminbek@gmail.com', type: 'string', description: 'Yangi elektron pochta (ixtiyoriy)' },
-        password: { default: 'new_password_123', type: 'string', description: 'Yangi parol' }
+        email: {
+          default: 'adminbek@gmail.com',
+          type: 'string',
+          description: 'Yangi elektron pochta (ixtiyoriy)',
+        },
+        password: { default: 'new_password_123', type: 'string', description: 'Yangi parol' },
       },
       required: [],
     },
@@ -141,7 +155,6 @@ export class AdminController {
     return this.adminService.updateProfile({ id, updateProfileData });
   }
 
-
   @Patch('update-password')
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
@@ -151,8 +164,12 @@ export class AdminController {
     schema: {
       type: 'object',
       properties: {
-        oldPassword: { default: "old_password", type: 'string', description: 'Joriy parol (faqat admin uchun)' },
-        newPassword: { default: "new_password", type: 'string', description: 'Yangi parol' },
+        oldPassword: {
+          default: 'old_password',
+          type: 'string',
+          description: 'Joriy parol (faqat admin uchun)',
+        },
+        newPassword: { default: 'new_password', type: 'string', description: 'Yangi parol' },
       },
       required: ['oldPassword', 'newPassword'],
     },
@@ -172,9 +189,7 @@ export class AdminController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'refresh token with refresh_token' })
   @ApiBearerAuth()
-  async refreshToken(
-    @Req() req: GuardRequest,
-  ): Promise<Tokens> {
+  async refreshToken(@Req() req: GuardRequest): Promise<Tokens> {
     return this.adminService.refreshTokens(req.user);
   }
 }

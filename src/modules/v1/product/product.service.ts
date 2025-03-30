@@ -8,29 +8,20 @@ import { CreateProductDto } from './dto/addProcuct.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    private procuctRepository: ProductRepository
-  ) { }
-
+  constructor(private procuctRepository: ProductRepository) {}
 
   async findAll(): Promise<ProductList[]> {
     return this.procuctRepository.getAllProducts();
   }
 
-  async findOne(
-    id: string
-  ): Promise<ProductOne> {
+  async findOne(id: string): Promise<ProductOne> {
     return this.procuctRepository.getProduct(id);
   }
 
-  async deleteServerForProduct(
-    id: string
-  ): Promise<ProductOne> {
+  async deleteServerForProduct(id: string): Promise<ProductOne> {
     return this.procuctRepository.deleteServerForProduct(id);
   }
-  async deleteProduct(
-    id: string
-  ): Promise<Message> {
+  async deleteProduct(id: string): Promise<Message> {
     return this.procuctRepository.deleteProduct(id);
   }
 
@@ -38,19 +29,21 @@ export class ProductsService {
     return this.procuctRepository.updateServerForProduct(productId, serverData);
   }
 
-
-
   async saveData(
-    files: { icon?: Express.Multer.File[]; server?: Express.Multer.File[]; agent?: Express.Multer.File[] },
-    body: CreateProductDto): Promise<Message & { id: string }> {
-
+    files: {
+      icon?: Express.Multer.File[];
+      server?: Express.Multer.File[];
+      agent?: Express.Multer.File[];
+    },
+    body: CreateProductDto,
+  ): Promise<Message & { id: string }> {
     if (!files.icon?.length || !files.server?.length || !files.agent?.length) {
       throw new HttpException(
         {
           status: 'error',
-          message: '3 ta faylni ham jo‘nating!'
+          message: '3 ta faylni ham jo‘nating!',
         },
-        HttpStatus.BAD_REQUEST
+        HttpStatus.BAD_REQUEST,
       );
     }
 
@@ -65,7 +58,6 @@ export class ProductsService {
     fs.renameSync(files.server[0].path, `${serverFolder}/${files.server[0].filename}`);
     fs.renameSync(files.agent[0].path, `${agentFolder}/${files.agent[0].filename}`);
 
-
     // Fayl yo‘llari
     const iconPath = `/icons/${files.icon[0].filename}`;
     const serverFilePath = `./uploads/products/${body.name}/server/${body.serverVersion}/${files.server[0].filename}`;
@@ -73,8 +65,8 @@ export class ProductsService {
 
     // Fayl hajmlari
     // const iconSize = fs.statSync(`.${iconPath}`).size;
-    const serverFileSize =  Math.floor(fs.statSync(`${serverFilePath}`).size / (1024 * 1024));
-    const agentFileSize =  Math.floor(fs.statSync(`${agentFilePath}`).size / (1024 * 1024));
+    const serverFileSize = Math.floor(fs.statSync(`${serverFilePath}`).size / (1024 * 1024));
+    const agentFileSize = Math.floor(fs.statSync(`${agentFilePath}`).size / (1024 * 1024));
 
     const dataToSave = {
       name: body.name,
@@ -88,7 +80,7 @@ export class ProductsService {
       publisher: body.publisher,
       installScript: body.installScript,
       updateScript: body.updateScript,
-      deleteScript: body.deleteScript
+      deleteScript: body.deleteScript,
     };
 
     return this.procuctRepository.create(dataToSave);

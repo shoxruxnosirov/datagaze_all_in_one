@@ -1,27 +1,31 @@
-import { HttpException, HttpStatus, Inject, Injectable } from "@nestjs/common";
-import { Knex } from "knex";
-import { Application, Computer, ComputerForList, ListWithPagination, NetworkAdapter } from "src/comman/types";
-import { KNEX_CONNECTION } from "src/database/workWithDB/database.module";
-import { ApplicationDto } from "src/modules/v1/agent/dto/application";
-import { CreateComputerDto } from "src/modules/v1/agent/dto/computer";
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Knex } from 'knex';
+import {
+  Application,
+  Computer,
+  ComputerForList,
+  ListWithPagination,
+  NetworkAdapter,
+} from 'src/comman/types';
+import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
+import { ApplicationDto } from 'src/modules/v1/agent/dto/application';
+import { CreateComputerDto } from 'src/modules/v1/agent/dto/computer';
 
 @Injectable()
 export class ComputerRepository {
-  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
+  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
   async getAllComputers(
     page: number,
-    pageSize: number
+    pageSize: number,
   ): Promise<ListWithPagination<ComputerForList>> {
     const offset = (page - 1) * pageSize;
-    const computers: (
-      ComputerForList & { total_records?: number }
-    )[] = await this.knex("computers")
-      .select("id", "hostname", "operation_system", "network_adapters")
-      .orderBy("created_at", "desc")
+    const computers: (ComputerForList & { total_records?: number })[] = await this.knex('computers')
+      .select('id', 'hostname', 'operation_system', 'network_adapters')
+      .orderBy('created_at', 'desc')
       .limit(pageSize)
       .offset(offset)
-      .select(this.knex.raw("COUNT(*) OVER() as total_records"));
+      .select(this.knex.raw('COUNT(*) OVER() as total_records'));
 
     if (computers.length === 0) {
       return {
@@ -32,12 +36,11 @@ export class ComputerRepository {
       };
     }
 
-
     const totalRecords = Number(computers[0].total_records);
 
-    computers.forEach(computer => {
+    computers.forEach((computer) => {
       const activeNetwork = computer.network_adapters?.find(
-        (networkAdapter: NetworkAdapter) => networkAdapter.available === "Up"
+        (networkAdapter: NetworkAdapter) => networkAdapter.available === 'Up',
       );
 
       if (activeNetwork) {
@@ -49,7 +52,7 @@ export class ComputerRepository {
         computer.ipAddress = firstNetworkAdapter ? firstNetworkAdapter.ip_address : undefined;
       }
 
-      computer.activity = 'Inactive';       // agent bilan kelishiladi
+      computer.activity = 'Inactive'; // agent bilan kelishiladi
       delete computer.network_adapters;
       delete computer.total_records;
     });
@@ -63,9 +66,9 @@ export class ComputerRepository {
   }
 
   async getComputerById(id: number): Promise<Computer> {
-    const computer = await this.knex("computers").where("id", id).first();
+    const computer = await this.knex('computers').where('id', id).first();
     if (!computer) {
-      throw new HttpException("Computer not found", HttpStatus.NOT_FOUND);
+      throw new HttpException('Computer not found', HttpStatus.NOT_FOUND);
     }
     delete computer.key;
     return computer;
@@ -74,18 +77,20 @@ export class ComputerRepository {
   async getApplicationsByComputerId(
     computerId: string,
     page: number,
-    pageSize: number
-  ): Promise<ListWithPagination<Application> > {
+    pageSize: number,
+  ): Promise<ListWithPagination<Application>> {
     // pageSize = 1000;
     const offset = (page - 1) * pageSize;
 
-    const applications: (Application & { total_records?: number })[] = await this.knex("applications")
-      .select("version", "name", "size", "type", "installed_date")
-      .where("computerId", computerId)
-      .orderBy("installed_date", "desc")
+    const applications: (Application & { total_records?: number })[] = await this.knex(
+      'applications',
+    )
+      .select('version', 'name', 'size', 'type', 'installed_date')
+      .where('computerId', computerId)
+      .orderBy('installed_date', 'desc')
       .limit(pageSize)
       .offset(offset)
-      .select(this.knex.raw("COUNT(*) OVER() as total_records")); // Jami yozuvlar sonini olish
+      .select(this.knex.raw('COUNT(*) OVER() as total_records')); // Jami yozuvlar sonini olish
 
     if (applications.length === 0) {
       return {
@@ -97,7 +102,7 @@ export class ComputerRepository {
     }
 
     const totalRecords = Number(applications[0].total_records);
-    applications.forEach(app => delete app.total_records);
+    applications.forEach((app) => delete app.total_records);
     return {
       data: applications,
       currentPage: page,
@@ -106,8 +111,13 @@ export class ComputerRepository {
     };
   }
 
-  async createOrUpdate(computerData: CreateComputerDto): Promise<{ computerId: string, status: string, key: string }> {
-    let key = computerData.network_adapters.map(item => item.mac_address).sort().join('_');
+  async createOrUpdate(
+    computerData: CreateComputerDto,
+  ): Promise<{ computerId: string; status: string; key: string }> {
+    const key = computerData.network_adapters
+      .map((item) => item.mac_address)
+      .sort()
+      .join('_');
     computerData.key = key;
 
     const dataToInsert = {
@@ -117,17 +127,17 @@ export class ComputerRepository {
     };
 
     // INSERT yoki UPDATE bo‘lgan satrni tekshirish
-    const query = this.knex("computers")
+    const query = this.knex('computers')
       .insert(dataToInsert)
-      .onConflict("key")
+      .onConflict('key')
       .merge()
-      .returning(["id", this.knex.raw("(xmax = 0) AS is_inserted")]); // xmax = 0 bo‘lsa, yangi qo‘shilgan
+      .returning(['id', this.knex.raw('(xmax = 0) AS is_inserted')]); // xmax = 0 bo‘lsa, yangi qo‘shilgan
 
     const [computer] = await query;
     console.log('computer: ', computer);
 
     // `is_inserted` = true bo‘lsa, INSERT bo‘lgan, aks holda UPDATE
-    const status = computer.is_inserted ? "registered" : "updated";
+    const status = computer.is_inserted ? 'registered' : 'updated';
 
     return {
       computerId: computer.id,
@@ -136,13 +146,19 @@ export class ComputerRepository {
     };
   }
 
-  async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ name: string, status: string }[]> {
+  async applicationRegister(
+    applications: ApplicationDto[],
+    computerId: string,
+  ): Promise<{ name: string; status: string }[]> {
     return await this.knex('applications')
       // 1. O'chirish uchun CTE
       .with('deleted_apps', (qb) => {
         qb.from('applications')
           .where('computerId', computerId)
-          .whereNotIn('name', applications.map(app => app.name))
+          .whereNotIn(
+            'name',
+            applications.map((app) => app.name),
+          )
           .del()
           .returning(['name', this.knex.raw("'deleted' AS status")]);
       })
@@ -152,16 +168,15 @@ export class ComputerRepository {
       .merge({
         name: this.knex.raw('EXCLUDED.name'),
         size: this.knex.raw('EXCLUDED.size'),
-        type: this.knex.raw('EXCLUDED.type')
+        type: this.knex.raw('EXCLUDED.type'),
       })
       .returning([
         'name',
-        this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END AS status")
+        this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END AS status"),
       ])
       // 3. Natijalarni birlashtirish
       .unionAll(this.knex.select('*').from('deleted_apps'));
   }
-  
 
   // async applicationRegister(applications: ApplicationDto[], computerId: string): Promise<{ name: string, status: string }[]> {
   //   const result = await this.knex('applications')
@@ -179,7 +194,6 @@ export class ComputerRepository {
   //     ]);
   //   return result as ({ name: string; status: string }[])
   // }
-
 
   // async createOrUpdate(computerData: CreateComputerDto): Promise<{ computerId: string, status: string, key: string }> {
   //   let key = computerData.network_adapters.map(item => item.mac_address).sort().join('_');
@@ -208,8 +222,6 @@ export class ComputerRepository {
   //   }
   // }
 
-
-
   /** Yangi kompyuter qo‘shish */
   // async createComputer(data: any): Promise<{ id: number }> {
   //   const [newComputer] = await this.knex("computers").insert(data).returning(["id"]);
@@ -233,6 +245,4 @@ export class ComputerRepository {
   //   }
   //   return { message: "Computer deleted successfully" };
   // }
-
-
 }

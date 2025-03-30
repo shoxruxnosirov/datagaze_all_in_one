@@ -11,6 +11,6 @@ import { AdminModule } from '../admin/admin.module';
   imports: [AdminModule],
   controllers: [ProductsController],
   providers: [ProductsService, ProductRepository, JwtService],
-  exports: [JwtService, ProductRepository]
+  exports: [JwtService, ProductRepository],
 })
 export class ProductsModule {}

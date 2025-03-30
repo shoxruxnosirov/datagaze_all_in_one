@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 
-
 import { ConnectConfig } from 'ssh2';
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 
@@ -15,7 +14,7 @@ import { Roles } from 'src/comman/decorators/roles.decorator';
 
 @Controller('ssh')
 export class SshController {
-  constructor(private sshService: SshService) { }
+  constructor(private sshService: SshService) {}
 
   @Post('deploy-product')
   @UseGuards(RolesGuard)
@@ -26,26 +25,31 @@ export class SshController {
     schema: {
       type: 'object',
       properties: {
-        productId: { type: 'string', example: ''},
+        productId: { type: 'string', example: '' },
         serverCredentials: {
           type: 'object',
           properties: {
             host: { default: '34.203.244.210', type: 'string', description: 'server host' },
             port: { default: '22', type: 'string', description: 'server port' },
             username: { default: 'ubuntu', type: 'string', description: 'server username' },
-            password: { default: 'New_admin_pass_123', type: 'string', description: 'server password' },
-          }
+            password: {
+              default: 'New_admin_pass_123',
+              type: 'string',
+              description: 'server password',
+            },
+          },
         },
-      }
+      },
     },
   })
-  async deployProduct(@Body() data: { productId: string, serverCredentials: ConnectDto }, @Res() res: Response) {
+  async deployProduct(
+    @Body() data: { productId: string; serverCredentials: ConnectDto },
+    @Res() res: Response,
+  ) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-
     await this.sshService.deployProject(data, res);
-  } 
-
+  }
 }

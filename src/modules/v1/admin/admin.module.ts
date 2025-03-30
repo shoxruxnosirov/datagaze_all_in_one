@@ -13,6 +13,6 @@ import { RolesGuardForRefreshToken } from 'src/comman/guards/refreshToken.guard'
   imports: [DatabaseModule],
   providers: [AdminService, JwtService, AdminRepository, RolesGuard, RolesGuardForRefreshToken],
   controllers: [AdminController],
-  exports: [AdminRepository]
+  exports: [AdminRepository],
 })
 export class AdminModule {}

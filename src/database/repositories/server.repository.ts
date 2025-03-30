@@ -1,23 +1,17 @@
-import {
-  HttpException,
-  HttpStatus,
-  Inject,
-  Injectable,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 
 import { Knex } from 'knex';
 
 import { ConnectConfig } from 'ssh2';
 
-
-import {Product, Server } from 'src/comman/types';
+import { Product, Server } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 // import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 
 @Injectable()
 export class SshRepository {
-  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
+  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
   // async connect(serverCredential: ConnectDto) {
   //     const result = await this.knex<IServer>('Servers')
@@ -28,7 +22,9 @@ export class SshRepository {
 
   // }
   async getSshStatus(serverId: string): Promise<Server> {
-    const server: Server | undefined = await this.knex<Server>('servers').where({ id: serverId }).first();
+    const server: Server | undefined = await this.knex<Server>('servers')
+      .where({ id: serverId })
+      .first();
     if (!server) {
       throw new HttpException(
         {
@@ -36,7 +32,7 @@ export class SshRepository {
           message: 'Server not found in the database.',
         },
         HttpStatus.NOT_FOUND,
-      )
+      );
     }
 
     // await this.knex('servers').where({ id: server.id }).update({ lastChecked: Date.now() }).returning('*');
@@ -63,7 +59,9 @@ export class SshRepository {
   }
 
   async getServerData(serverId: string): Promise<Server> {
-    const serverData: Server | undefined = await this.knex<Server>('servers').where({ id: serverId }).first();
+    const serverData: Server | undefined = await this.knex<Server>('servers')
+      .where({ id: serverId })
+      .first();
     if (serverData) {
       return serverData;
     } else {
@@ -73,7 +71,7 @@ export class SshRepository {
           message: 'Server not found in the database.',
         },
         HttpStatus.NOT_FOUND,
-      )
+      );
     }
   }
 

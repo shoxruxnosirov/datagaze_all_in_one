@@ -18,7 +18,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
     private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
     private readonly adminRepository: AdminRepository,
-  ) { }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const roles = this.reflector.get<string[]>('roles', context.getHandler());
@@ -39,7 +39,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
 
       if (userRole === Role.ADMIN) {
         try {
-          await this.adminRepository.getOneAdmin(decoded.id)
+          await this.adminRepository.getOneAdmin(decoded.id);
         } catch (err) {
           throw new ForbiddenException('You do not have permission to access this resource');
         }

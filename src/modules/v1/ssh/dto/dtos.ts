@@ -6,5 +6,3 @@ export class ConnectDto {
   privateKey?: string;
   readyTimeout?: number;
 }
-
-

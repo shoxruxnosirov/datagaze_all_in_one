@@ -3,7 +3,7 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  SubscribeMessage
+  SubscribeMessage,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
@@ -13,8 +13,8 @@ import { JWT_SECRET } from 'src/config/env';
 import { JwtService } from '@nestjs/jwt';
 
 type FrontendSocket = Omit<Socket, 'data'> & {
-  data: Payload
-}
+  data: Payload;
+};
 
 @Injectable()
 @WebSocketGateway(3006, { cors: { origin: '*' } }) // Frontend uchun socket
@@ -26,8 +26,8 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     private jwtService: JwtService,
 
     @Inject(forwardRef(() => AgentGateway))
-    private readonly agentGateway: AgentGateway
-  ) { }
+    private readonly agentGateway: AgentGateway,
+  ) {}
 
   async handleConnection(socket: FrontendSocket) {
     this.tokenVerifying(socket);
@@ -44,12 +44,23 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage('command')
-  async handleCommand(socket: FrontendSocket, payload: { computerId: string; name: string, command: string }) {
-    const result = this.agentGateway.sendCommandToAgent(payload.computerId, { command: payload.command, name: payload.name });
+  async handleCommand(
+    socket: FrontendSocket,
+    payload: { computerId: string; name: string; command: string },
+  ) {
+    const result = this.agentGateway.sendCommandToAgent(payload.computerId, {
+      command: payload.command,
+      name: payload.name,
+    });
     console.log(result);
     if (result === 'buytuq yuborildi') {
       this.commands.set(`${payload.computerId}_${payload.command}_${payload.name}`, socket);
-      setTimeout(() => { this.commands.delete(`${payload.computerId}_${payload.command}_${payload.name}`); }, 5 * 60 * 1000);
+      setTimeout(
+        () => {
+          this.commands.delete(`${payload.computerId}_${payload.command}_${payload.name}`);
+        },
+        5 * 60 * 1000,
+      );
     }
   }
 
@@ -59,12 +70,20 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     console.log(result);
     if (result === "agnetni o'chirish buytuq yuborildi") {
       this.commands.set(`${payload.computerId}_deleteAgent`, socket);
-      setTimeout(() => { this.commands.delete(`${payload.computerId}_delete_agent`); }, 5 * 60 * 1000)
+      setTimeout(
+        () => {
+          this.commands.delete(`${payload.computerId}_delete_agent`);
+        },
+        5 * 60 * 1000,
+      );
     }
   }
 
   async responseCommand(computerId: string, data: any) {
-    console.log('frontendga yuborish: ', `${computerId}_${data.command}_${data.name}: ${data.status}`);
+    console.log(
+      'frontendga yuborish: ',
+      `${computerId}_${data.command}_${data.name}: ${data.status}`,
+    );
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
@@ -86,7 +105,7 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
       const decoded: Payload = this.jwtService.verify(token, { secret: JWT_SECRET });
       const payload: Payload = {
         id: decoded.id,
-        role: decoded.role
+        role: decoded.role,
       };
       socket.data = payload;
       console.log(`CMU ${decoded.role} ulandi id: ${payload.id}`);

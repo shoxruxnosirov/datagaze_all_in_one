@@ -1,10 +1,10 @@
-import { Module } from "@nestjs/common";
-import { AgentsService } from "./agent.service";
-import { AgentsController } from "./agent.controller";
+import { Module } from '@nestjs/common';
+import { AgentsService } from './agent.service';
+import { AgentsController } from './agent.controller';
 
 import { DatabaseModule } from '../../../database/workWithDB/database.module';
-import { ComputerRepository } from "src/database/repositories/computer.repository";
-import { JwtService } from "@nestjs/jwt";
+import { ComputerRepository } from 'src/database/repositories/computer.repository';
+import { JwtService } from '@nestjs/jwt';
 // import { DatabaseModule } from "../database.module";
 
 @Module({

@@ -18,10 +18,9 @@ import { UpdateAdminProfileDto } from 'src/modules/v1/admin/dto/update';
 import { LoginAdminDto } from 'src/modules/v1/admin/dto/login';
 import { CreateAdminDto } from 'src/modules/v1/admin/dto/register';
 
-
 @Injectable()
 export class AdminRepository {
-  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
+  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
   async loginAdmin(admin: LoginAdminDto): Promise<Admin> {
     const data: Admin = await this.knex('admins')
@@ -104,8 +103,6 @@ export class AdminRepository {
     }
   }
 
-
-
   // async updatePasswordBySuperadmin(data: {
   //   userId: string;
   //   newPassword: string;
@@ -133,7 +130,6 @@ export class AdminRepository {
   //     message: `Password updated successfully  new password: "${data.newPassword}"`,
   //   };
   // }
-
 
   async updatePasswordByAdmin(
     data: { oldPassword: string; newPassword: string },
@@ -191,16 +187,16 @@ export class AdminRepository {
       throw new HttpException(
         {
           status: 'error',
-          message: 'Admin not found'
+          message: 'Admin not found',
         },
-        HttpStatus.NOT_FOUND
-      )
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     return {
       status: 'success',
-      message: 'remove admin account successfull'
-    }
+      message: 'remove admin account successfull',
+    };
   }
 
   private async hashPassword(password: string): Promise<string> {

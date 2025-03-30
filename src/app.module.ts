@@ -27,7 +27,7 @@ import { FrontendGateway } from './modules/v1/sockets/frondend/computers/compute
     AgentsModule,
     KnexModule.forRoot({
       config: {
-        client: knexConfig.client, 
+        client: knexConfig.client,
         connection: knexConfig.connection,
       },
     }),
@@ -43,7 +43,14 @@ import { FrontendGateway } from './modules/v1/sockets/frondend/computers/compute
     ),
   ],
   controllers: [AppController],
-  providers: [AppService, SshGateway, SshGatewayConnection, AgentGateway, FrontendGateway, JwtService],
-  exports: [JwtService]
+  providers: [
+    AppService,
+    SshGateway,
+    SshGatewayConnection,
+    AgentGateway,
+    FrontendGateway,
+    JwtService,
+  ],
+  exports: [JwtService],
 })
-export class AppModule { }
+export class AppModule {}

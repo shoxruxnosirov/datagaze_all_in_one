@@ -11,7 +11,6 @@ export class UpdateAdminPasswordBySuperadminoDto {
   newPassword: string;
 }
 
-
 export class UpdateAdminProfileDto {
   username?: string;
   name?: string;

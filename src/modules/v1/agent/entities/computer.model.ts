@@ -1,8 +1,8 @@
-import { Model, RelationMappings } from "objection";
-import { Application } from "./application.model";
+import { Model, RelationMappings } from 'objection';
+import { Application } from './application.model';
 
 export class Computer extends Model {
-  static tableName = "computers";
+  static tableName = 'computers';
 
   id!: number;
   hostname!: string;
@@ -24,8 +24,8 @@ export class Computer extends Model {
         relation: Model.HasManyRelation,
         modelClass: Application,
         join: {
-          from: "computers.id",
-          to: "applications.computerId",
+          from: 'computers.id',
+          to: 'applications.computerId',
         },
       },
     };

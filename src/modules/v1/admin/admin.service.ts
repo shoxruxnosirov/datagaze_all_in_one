@@ -8,7 +8,7 @@ import {
   REFRESH_TOKEN_EXPIRATION,
   REFRESH_TOKEN_SECRET,
 } from 'src/config/env';
-import { UpdateAdminPasswordDto, UpdateAdminProfileDto, } from 'src/modules/v1/admin/dto/update';
+import { UpdateAdminPasswordDto, UpdateAdminProfileDto } from 'src/modules/v1/admin/dto/update';
 import { Admin2, Message, MessageforLogin, Payload, Tokens } from 'src/comman/types';
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 import { CreateAdminDto } from './dto/register';
@@ -20,7 +20,7 @@ export class AdminService {
   constructor(
     private jwtService: JwtService,
     private readonly adminRepository: AdminRepository,
-  ) { }
+  ) {}
 
   async createAdmin(createAdminDto: CreateAdminDto): Promise<Message> {
     await this.adminRepository.createAdmin(createAdminDto);
@@ -63,10 +63,10 @@ export class AdminService {
   }
 
   async updatePassword(data: {
-    updatePassData: UpdateAdminPasswordDto
-    admin: Payload
+    updatePassData: UpdateAdminPasswordDto;
+    admin: Payload;
   }): Promise<Message> {
-        return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
+    return await this.adminRepository.updatePasswordByAdmin(data.updatePassData, data.admin);
   }
 
   async updateProfile(data: {
@@ -77,14 +77,14 @@ export class AdminService {
   }
 
   async deleteAdminBySuperadmin(id): Promise<Message> {
-    return this.adminRepository.deleteAdminBySuperadmin(id)
+    return this.adminRepository.deleteAdminBySuperadmin(id);
   }
 
   refreshTokens(payload: Payload): Tokens {
-      return {
-        token: this.createAccessToken(payload),
-        refreshToken: this.createRefreshToken(payload),
-      };
+    return {
+      token: this.createAccessToken(payload),
+      refreshToken: this.createRefreshToken(payload),
+    };
   }
 
   private createRefreshToken(payload: Payload): string {

@@ -22,9 +22,6 @@ const db = Knex(knexConfig);
     await db.schema.dropTableIfExists('computers');
     await db.schema.dropTableIfExists('Computers');
 
-
-
-
     const SUPERADMIN_PASSWORD: string = await bcrypt.hash('superadmin', 10);
 
     await db.schema.createTable('admins', function (table) {
@@ -72,10 +69,10 @@ const db = Knex(knexConfig);
 
       table.string('serverFilePath').notNullable();
       table.string('agentFilePath').notNullable();
-      
+
       table.integer('serverFileSize').notNullable();
       table.integer('agentFileSize').notNullable();
-      
+
       table.uuid('serverId').nullable().references('id').inTable('servers').onDelete('SET NULL');
 
       table.string('publisher').notNullable();
@@ -87,7 +84,6 @@ const db = Knex(knexConfig);
       table.integer('requiredRam').defaultTo(16);
       table.integer('requiredStorage').defaultTo(500);
       table.integer('requiredNetwork').defaultTo(1);
-
 
       table.text('installScript').nullable();
       table.text('updateScript').nullable();
@@ -140,37 +136,35 @@ const db = Knex(knexConfig);
     //   lastUploadAt: null,
     // });
 
-
-      await  db.schema.createTable("computers", (table) => {
-        table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
-        table.string("key").notNullable().unique();
-        table.string("hostname").notNullable();
-        table.string("operation_system").notNullable();
-        table.string("platform").notNullable();       
-        table.string("build_number").nullable();     
-        table.string("version").notNullable();          
-        table.integer("ram").notNullable();
-        table.integer("free_ram").defaultTo(50);
-        table.string("cpu").notNullable();
-        table.string("model").notNullable();            
-        table.integer("cores").notNullable();          
-        table.jsonb("network_adapters").notNullable();
-        table.jsonb("disks").notNullable(); 
-        table.timestamp("created_at").defaultTo(db.fn.now());
+    await db.schema.createTable('computers', (table) => {
+      table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
+      table.string('key').notNullable().unique();
+      table.string('hostname').notNullable();
+      table.string('operation_system').notNullable();
+      table.string('platform').notNullable();
+      table.string('build_number').nullable();
+      table.string('version').notNullable();
+      table.integer('ram').notNullable();
+      table.integer('free_ram').defaultTo(50);
+      table.string('cpu').notNullable();
+      table.string('model').notNullable();
+      table.integer('cores').notNullable();
+      table.jsonb('network_adapters').notNullable();
+      table.jsonb('disks').notNullable();
+      table.timestamp('created_at').defaultTo(db.fn.now());
     });
 
-    await db.schema.createTable("applications", (table) => {
+    await db.schema.createTable('applications', (table) => {
       // table.uuid("id").defaultTo(db.raw('uuid_generate_v4()')).primary();
-      table.uuid("computerId").unsigned().references("id").inTable("computers").onDelete("CASCADE");
-      table.string("name").nullable();
-      table.string("version").nullable();
-      table.timestamp("installed_date").defaultTo(db.fn.now());
-      table.string("type").nullable();
-      table.integer("size").nullable();
-    
-      table.unique(["computerId", "name"]);
+      table.uuid('computerId').unsigned().references('id').inTable('computers').onDelete('CASCADE');
+      table.string('name').nullable();
+      table.string('version').nullable();
+      table.timestamp('installed_date').defaultTo(db.fn.now());
+      table.string('type').nullable();
+      table.integer('size').nullable();
+
+      table.unique(['computerId', 'name']);
     });
-    
 
     await db.destroy();
 

@@ -17,11 +17,11 @@ export class FileUploadInterceptor {
         storage: diskStorage({
           destination: (req, file, cb) => {
             // const { product_name, server_file_version, agent_file_version } = req.savedBody; req.body;
-            
+
             // console.log('body: ', req.body);
 
             // Asosiy papkalar
-            const baseFolder = './uploads/products/';// + product_name;
+            const baseFolder = './uploads/products/'; // + product_name;
             // const serverFolder = `${baseFolder}/server/${serverVersion}`;
             // const agentFolder = `${baseFolder}/agent/${agentVersion}`;
             const iconsFolder = './uploads/icons/';
@@ -34,7 +34,8 @@ export class FileUploadInterceptor {
 
             let folder = '';
             if (file.fieldname === 'icon') folder = iconsFolder;
-            else if (file.fieldname === 'server') folder = baseFolder;//serverFolder;
+            else if (file.fieldname === 'server')
+              folder = baseFolder; //serverFolder;
             else if (file.fieldname === 'agent') folder = baseFolder; //agentFolder;
 
             cb(null, folder);
@@ -42,7 +43,7 @@ export class FileUploadInterceptor {
           filename: (req, file, cb) => {
             // console.log('body: ', req.body);
             // console.log('file: ', file);
-            cb(null, file.originalname)// + extname(file.originalname));
+            cb(null, file.originalname); // + extname(file.originalname));
           },
         }),
         // fileFilter: (req, file, cb) => {
@@ -50,7 +51,7 @@ export class FileUploadInterceptor {
         //   console.log('File Filter -> req.body:', req.body);
         //   cb(null, true);
         // },
-      }
+      },
     );
   }
 }

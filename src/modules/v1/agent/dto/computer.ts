@@ -1,5 +1,5 @@
-import { IsString, IsInt, IsArray, IsEnum, ValidateNested } from "class-validator";
-import { Type } from "class-transformer";
+import { IsString, IsInt, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 class NetworkAdapterDto {
   @IsString()
@@ -11,8 +11,8 @@ class NetworkAdapterDto {
   @IsString()
   mac_address: string;
 
-  @IsEnum(["Up", "Down"])
-  available: "Up" | "Down";
+  @IsEnum(['Up', 'Down'])
+  available: 'Up' | 'Down';
 }
 
 class DiskDto {
@@ -30,7 +30,6 @@ class DiskDto {
 }
 
 export class CreateComputerDto {
-
   key?: string;
 
   @IsString()
