@@ -8,27 +8,22 @@ import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
 import { Socket } from 'socket.io';
 
-import { Message, Server, TerminalSession } from 'src/comman/types';
+import { FrontendSocketTerminal, Message, Server, TerminalSession } from 'src/comman/types';
 import { ConnectDto } from '../../../ssh/dto/dtos';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class SshGatewayConnection {
-    //   private sshClient: Client;
-    constructor() {
-        // this.sshClient = new Client;
-    }
 
     private async connectToServer(
         connectConfig: ConnectDto,
         term: {
-            socket: Socket,
+            socket: FrontendSocketTerminal,
             conn: Client,
             sessionId: string,
             session: TerminalSession
         }
     ): Promise<void> {
-        // console.log('connectData: ', connectConfig);
         const { socket, conn, sessionId, session } = term;
 
         return new Promise((resolve, reject) => {
@@ -100,7 +95,7 @@ export class SshGatewayConnection {
             serverCredentials: ConnectDto;
         },
         term: {
-            socket: Socket,
+            socket: FrontendSocketTerminal,
             conn: Client,
             sessionId: string,
             session: TerminalSession
@@ -119,7 +114,7 @@ export class SshGatewayConnection {
     }
 
     private async findOsType(term: {
-        socket: Socket,
+        socket: FrontendSocketTerminal,
         conn: Client,
         sessionId: string,
         session: TerminalSession
@@ -163,36 +158,36 @@ export class SshGatewayConnection {
                     let osType = '';
 
                     if (stream) {
-                        stream.on('data', (data) => {
-                            osType += data.toString();
-                        });
+                    stream.on('data', (data) => {
+                        osType += data.toString();
+                    });
 
-                        stream.on('close', () => {
-                            osType = osType.trim();
-                            socket.emit('alert', {
-                                sessionId,
-                                message: `${osType} OS turidagi server ekanligi aniqlandi\n`
-                            });
-                            resolve(osType);
+                    stream.on('close', () => {
+                        osType = osType.trim();
+                        socket.emit('alert', {
+                            sessionId,
+                            message: `${osType} OS turidagi server ekanligi aniqlandi\n`
                         });
+                        resolve(osType);
+                    });
 
-                        stream.on('error', (error: Error) => {
-                            socket.emit('error', {
-                                sessionId,
-                                message: `Server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message}\n`,
-                            });
-                            // socket.disconnect();
-                            // reject('unknown');
-                            reject(
-                                new WsException(
-                                    `Ulanilgan server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message} \n`,
-                                ),
-                            );
+                    stream.on('error', (error: Error) => {
+                        socket.emit('error', {
+                            sessionId,
+                            message: `Server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message}\n`,
                         });
+                        // socket.disconnect();
+                        // reject('unknown');
+                        reject(
+                            new WsException(
+                                `Ulanilgan server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message} \n`,
+                            ),
+                        );
+                    });
                     } else {
                         reject(
                             new WsException(
-                                `terminal hali tayinlanmagan \n`,
+                                `terminal hali tayinlanmagan stream ham undifined bo'lib qolishi mumkin ekan`,
                             ),
                         );
                     }
@@ -202,174 +197,11 @@ export class SshGatewayConnection {
         });
     }
 
-    // private async uploadAndInstallNodeJS(conn: Client, osType: string, socket: Socket, sessionId: string) {
-    //     return new Promise((resolve, reject) => {
-    //         let remoteFile: string;
-    //         let localFilePath: string;
-    //         if (osType === 'Windows') {
-    //             remoteFile = `C:\\Users\\Administrator\\Downloads\\nodejs.zip`;
-    //             localFilePath = path.join(process.cwd(), 'products', 'nodejs', 'node_v22.14.0_64.zip');
-    //         } //if (osType === 'Linux')
-    //         else {
-    //             remoteFile = `node.tar.xz`;
-    //             localFilePath = path.join(process.cwd(), 'products', 'nodejs', 'node_v22.14.0_64.tar.xz');
-    //         }
-
-    //         // console.log('localFilePath:', localFilePath);
-    //         // Faylni serverga yuborish
-    //         conn.sftp((err: Error, sftp: SFTPWrapper) => {
-    //             if (err) {
-    //                 socket.emit('error', {
-    //                     message: `Nodejs uploads SFTP ulanish xatosi err: ${err.message} \n`,
-    //                 });
-    //                 // socket.disconnect();
-    //                 reject(new WsException(`Nodejs uploads SFTP ulanish xatosi err: ${err.message}\n`));
-    //             }
-
-    //             const fileSize = fs.statSync(localFilePath).size;
-    //             let uploadedSize = 0;
-
-    //             let progress = 0..toFixed(2);
-    //             const barLength = 40;
-    //             let filledLength = Math.round((+progress / 100) * barLength);
-    //             let progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
-
-    //             console.log(`\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
-    //             socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress });
-    //             socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
-
-    //             const readStream = fs.createReadStream(localFilePath);
-    //             const writeStream: Writable = sftp.createWriteStream(remoteFile);
-
-    //             readStream.on('data', (chunk) => {
-    //                 uploadedSize += chunk.length;
-    //                 progress = ((uploadedSize / fileSize) * 100).toFixed(2);
-    //                 filledLength = Math.round((+progress / 100) * barLength);
-    //                 const progressBar = `[${"#".repeat(filledLength)}${"-".repeat(barLength - filledLength)}]`;
-
-    //                 console.log(`\x1b[A\x1b[K\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m`);
-
-    //                 socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress });
-    //                 socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34mNodeJs uploading ${progressBar} ${progress}%\x1b[0m` });
-    //             });
-
-    //             writeStream.on('close', () => {
-    //                 console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Nodejs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m`);
-
-    //                 socket.emit('uploading', { sessionId, eventName: "Nodejs uploading", progress: 100..toFixed(2) });
-    //                 socket.emit('installing', { sessionId, eventName: "Nodejs installing", progress: 0..toFixed(2) });
-    //                 socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 NodeJs serverga yuklandi. Endi o‘rnatilmoqda...\x1b[0m` });
-
-    //                 readStream.destroy();
-    //                 writeStream.destroy();
-    //                 sftp.end();
-
-    //                 // resolve('success');
-
-    //                 const linuxCommands = `
-    //         # sudo 
-    //         tar -xf ${remoteFile} -C ~
-
-    //         # PATH ga qo'shish (bash va zsh uchun)
-    //         # echo 'export PATH=~/node_v22.14.0_64/bin:$PATH' | tee -a /etc/profile.d/nodejs.sh > /dev/null
-    //         echo 'export PATH=~/node_v22.14.0_64/bin:$PATH' >> ~/.bashrc
-
-
-    //         # O'zgarishlarni tatbiq qilish
-    //         # source /etc/profile.d/nodejs.sh
-    //         source ~/.bashrc
-
-    //         # Node.js versiyasini tekshirish
-    //         # node -v
-    //       `;
-    //                 const windowsCommands = `
-    //         powershell -Command "Expand-Archive -Path ${remoteFile} -DestinationPath C: -Force
-
-    //         # Avvalgi PATH qiymatini olish
-    //         $oldPath = [System.Environment]::GetEnvironmentVariable('Path', [System.EnvironmentVariableTarget]::Machine)
-
-    //         # Agar PATH ichida 'C:\\nodejs\\bin' bo‘lmasa, qo‘shamiz
-    //         if ($oldPath -notlike '*C:\\nodejs\\bin*') {
-    //             $newPath = $oldPath + ';C:\\nodejs\\bin'
-    //             [System.Environment]::SetEnvironmentVariable('Path', $newPath, [System.EnvironmentVariableTarget]::Machine)
-    //         }
-
-    //         # Joriy sessiyada ham ishlashi uchun PATH ni yangilash
-    //         $env:Path += ';C:\\nodejs\\bin'
-
-    //         # Node.js versiyasini tekshirish
-    //         node -v
-    //         "
-    //       `;
-
-    //                 // OS turiga qarab buyruqni bajarish
-    //                 conn.exec(
-    //                     osType === 'Linux' ? linuxCommands : windowsCommands,
-    //                     (err: Error, stream: ClientChannel) => {
-    //                         if (err) {
-    //                             socket.emit('error', {
-    //                                 message: `Nodejs ni o'rnatishda xato yuzaga keldi: ${err.message}\n`,
-    //                             });
-    //                             // socket.disconnect();
-    //                             reject(
-    //                                 new WsException(`Nodejs ni o'rnatishda xato yuzaga keldi err: ${err.message}`),
-    //                             );
-    //                         }
-
-    //                         stream.on('data', (data: Buffer) => {
-    //                             console.log(`\x1b[A\x1b[K📦 Nodejs version: ${data.toString()} \x1b[0m`);
-    //                             socket.emit('installing', { sessionId, eventName: "Nodejs installing", progress: 100..toFixed(2) });
-    //                             socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G📦 Nodejs version: ${data.toString()} \x1b[0m` });
-    //                         });
-
-    //                         stream.stderr.on('data', (data: Buffer) => {
-    //                             const errorMsg = data.toString();
-    //                             console.error('⚠️ Xatoo:', errorMsg);
-
-    //                             // Agar jiddiy xatolik bo‘lsa, jarayonni to‘xtatamiz
-    //                             if (
-    //                                 errorMsg.includes('command not found') ||
-    //                                 errorMsg.includes('Permission denied')
-    //                             ) {
-    //                                 socket.emit('error', {
-    //                                     message: `Nodejs ni o'rnatishda err: ${data.toString()}\n`,
-    //                                 });
-    //                                 // socket.disconnect();
-    //                                 reject(new WsException(`nodejs download stream.stder.on. err: ${err.message}`));
-    //                             } else {
-    //                                 socket.emit('alert', {
-    //                                     message: `Nodejs ni o'rnatishda alert. alert: ${data.toString()}\n`,
-    //                                 });
-    //                             }
-    //                         });
-
-    //                         stream.on('close', () => {
-    //                             console.log('✅ Node.js o‘rnatildi!');
-    //                             socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GNodejs ni o'rnatildi !\x1b[0m` });
-    //                             resolve('success');
-    //                         });
-    //                     },
-    //                 );
-    //             });
-
-    //             // ✅ Xatolik yuz bersa oqimni yopish
-    //             writeStream.on('error', (err) => {
-    //                 console.error('Write stream xatosi:', err);
-    //                 writeStream.destroy();
-    //                 readStream.destroy();
-    //                 sftp.end();
-    //             });
-
-    //             readStream.pipe(writeStream);
-    //         });
-    //     });
-    // }
-
     private async uploadProduct(
         localProjectPath: string,
         osType: string,
         term: {
-            socket: Socket,
+            socket: FrontendSocketTerminal,
             conn: Client,
             sessionId: string,
             session: TerminalSession
@@ -396,10 +228,6 @@ export class SshGatewayConnection {
                 // remoteProjectPath = `~`;
             }
 
-            // console.log('remoteFile: ', remoteFile);
-            // console.log('remoteProjectPath: ', remoteProjectPath);
-
-            // Faylni serverga yuborish
             conn.sftp((err: Error, sftp: SFTPWrapper) => {
                 if (err) {
                     socket.emit('error', {
@@ -412,27 +240,6 @@ export class SshGatewayConnection {
 
                 session.shell.end = async () => {
                     console.log('sesson.shell.end uploadProduct da chaqirildi');
-                    // try {
-                    //     readStream.destroy();
-                    //     writeStream.destroy();
-                    // } catch (err) {
-                    //     console.error("Stream'larni yopishda xatolik:", err);
-                    // }
-
-                    // try {
-                    //     await this.deleteRemoteFile(sftp, remoteFile);
-                    // } catch (err) {
-                    //     console.error("Faylni o‘chirishda xatolik:", err);
-                    // }
-
-                    // try {
-                    //     sftp.end();
-                    // } catch (err) {
-                    //     console.error("SFTP sessiyasini yopishda xatolik:", err);
-                    // }
-
-                    // reject('stopped');
-
                     readStream.destroy();
                     writeStream.destroy();
                     await this.deleteRemoteFile(sftp, remoteFile);
@@ -446,7 +253,7 @@ export class SshGatewayConnection {
                 const writeStream = sftp?.createWriteStream?.(remoteFile);
                 if (!writeStream) {
                     reject('stopped');
-                    // return;
+                    return;
                 }
                 const readStream = fs.createReadStream(localProjectPath);
 
@@ -475,67 +282,21 @@ export class SshGatewayConnection {
                 });
 
                 writeStream?.on('close', () => {
+
+                    writeStream?.destroy();
+                    readStream?.destroy();
+                    sftp?.end();
+
+                    if (!writeStream.writableEnded) {
+                        return;
+                    } 
+
                     console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi\x1b[0m`);
                     // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m` });
 
                     socket.emit('uploading', { sessionId, eventName: "Product uploading", progress: 100..toFixed(2) });
                     socket.emit('data', { sessionId, output: `\x1b[2K\x1b[G\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m\r\n` });
 
-                    writeStream?.destroy();
-                    readStream?.destroy();
-                    sftp?.end();
-                    resolve('success');
-
-
-                    //             const linuxCommands = `
-                    //     #sudo
-                    //     # rm -rf "${remoteProjectPath}"
-                    //     #sudo
-                    //     # mkdir -p "${remoteProjectPath}"
-
-                    //     #sudo
-                    //     tar -xf ${remoteFile} -C ${remoteProjectPath}
-
-                    //     # cd ${remoteProjectPath}/product
-
-                    //     # npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz 
-                    //     # npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz 
-                    //     # pm2 start server.js --name my-nest-app --watch
-
-                    //     # node -v
-                    //     # npm -v
-
-                    //     # pm2 save
-                    //     # pm2 startup
-                    //   `;
-
-                    //             const windowsCommands = `
-                    //     powershell -Command "
-                    //     if (Test-Path -Path ${remoteProjectPath}) {
-                    //         Remove-Item -Path ${remoteProjectPath} -Recurse -Force
-                    //     }
-                    //     New-Item -ItemType Directory -Path ${remoteProjectPath} | Out-Null
-                    //     Expand-Archive -Path ${remoteFile} -DestinationPath ${remoteProjectPath} -Force
-                    //     "
-
-                    //     # npm cache add ${remoteProjectPath}\\product\\pm2-5.4.3.tgz
-
-                    //     # # npm install -g ${remoteProjectPath}\\product\\pm2-5.4.3.tgz
-                    //     # powershell -Command "Start-Process powershell -ArgumentList 'npm install -g ${remoteProjectPath}\\product\\pm2-5.4.3.tgz' -Verb RunAs -Wait"
-
-                    //     # pm2 --version
-
-                    //     # cd ${remoteProjectPath}\\product
-
-                    //     # pm2 start npm --name my-nest-app -- run start:prod
-
-                    //     # pm2 save
-
-                    //     # # pm2 startup
-                    //     # powershell -Command "Start-Process powershell -ArgumentList 'pm2 startup' -Verb RunAs -Wait"
-                    //   `;
-
-                    // const notExec = ' ';
 
                     conn.exec(
                         installScript, // osType === 'Linux' ? linuxCommands : windowsCommands,
@@ -562,7 +323,7 @@ export class SshGatewayConnection {
                                         );
                                     }
                                 })
-                                reject('stopped');
+                                reject(new WsException('exec da stopped'));
                             }
                             stream.on('data', (data: Buffer) => {
                                 const formattedData = data.toString();//.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -598,11 +359,13 @@ export class SshGatewayConnection {
                         },
                     );
 
+                    // resolve('success');
+
                 });
 
                 // ✅ Xatolik yuz bersa oqimni yopish
                 writeStream?.on('error', (err: Error) => {
-                    // console.error('Write stream xatosi:', err);
+                    console.error('Write stream xatosi:', err);
                     writeStream.destroy();
                     readStream.destroy();
                     sftp.end();

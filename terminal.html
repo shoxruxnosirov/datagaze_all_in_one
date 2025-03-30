@@ -48,7 +48,7 @@
 <body>
     <!-- Deploy Form -->
     <div>
-        <input type="text" id="productId" placeholder="Product ID" value="92549ffe-c8ba-45a7-9697-7013b50247bf"><br>
+        <input type="text" id="productId" placeholder="Product ID" value="9f938f75-9f45-46a2-b249-6c830f3d32f7"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
         <input type="text" id="port" placeholder="Port" value="22"><br>
         <input type="text" id="username" placeholder="Username" value="root"><br>
@@ -59,7 +59,7 @@
     <!-- Go to Server Form -->
     <div>
         <input type="text" id="serverProductId" placeholder="Product ID"
-            value="92549ffe-c8ba-45a7-9697-7013b50247bf"><br>
+            value="9f938f75-9f45-46a2-b249-6c830f3d32f7"><br>
         <button onclick="goToServer()">Go To Server</button>
     </div>
     <br>
@@ -77,7 +77,7 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
+                socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
                     extraHeaders: {
                         transports: ['websocket'],
                         Authorization: `Bearer ${jwtToken}`,

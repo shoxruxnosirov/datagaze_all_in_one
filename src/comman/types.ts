@@ -9,9 +9,12 @@ export type Tokens = {
   refreshToken: string;
 }
 
+export type FrontendSocketTerminal = Omit<Socket, 'data'> & {
+  data: { sessions: Map<string, TerminalSession> }
+}
 
 export type TerminalSession = {
-    socket: Socket;
+    socket: FrontendSocketTerminal;
     shell: Channel | null,// | {write: (com: string) => void, end: () => void};
     ptyTerm: pty.IPty | null;
     // skipFunc: {
