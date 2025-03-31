@@ -41,8 +41,8 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('delete_agent')
-  _deleteAgent(socket: AgentSocket, data: { status: string }) {
-    this.frondendSocket.deleteAgent(socket.data.computerId, data.status);
+  _deleteAgent(socket: AgentSocket, data: { status: string, message: string }) {
+    this.frondendSocket.deleteAgent(socket.data.computerId, data);
   }
 
   sendCommandToAgent(computerId: string, commandData: { command: string; name: string }): string {
@@ -79,7 +79,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return false;
     }
     try {
-      console.log('guard dan token: ', token);
+      console.log('tokenVerifying dan token: ', token);
       const decoded: PayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
       const payload: PayloadAgent = {
         computerId: decoded.computerId,

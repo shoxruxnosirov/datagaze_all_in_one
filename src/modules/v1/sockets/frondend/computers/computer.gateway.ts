@@ -83,8 +83,8 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
-  deleteAgent(computerId: string, status: string) {
-    this.commands.get(`${computerId}_delete_agent`)?.emit('delete_agent', { computerId, status });
+  deleteAgent(computerId: string, data: {status: string, message: string}) {
+    this.commands.get(`${computerId}_delete_agent`)?.emit('delete_agent', { computerId, data });
   }
 
   activeOrInactiveAgnet(activity: 'active_agent' | 'inactive_agent', computerId: string) {
