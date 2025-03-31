@@ -65,7 +65,7 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     const result = this.agentGateway.deleteAgent(payload.computerId);
     console.log(result);
     if (result === "agnetni o'chirish buytuq yuborildi") {
-      this.commands.set(`${payload.computerId}_deleteAgent`, socket);
+      this.commands.set(`${payload.computerId}_delete_agent`, socket);
       setTimeout(
         () => {
           this.commands.delete(`${payload.computerId}_delete_agent`);

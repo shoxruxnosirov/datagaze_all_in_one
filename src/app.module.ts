@@ -6,17 +6,15 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminModule } from './modules/v1/admin/admin.module';
-import { SshModule } from './modules/v1/ssh/ssh.module';
+// import { SshModule } from './modules/v1/ssh/ssh.module';
 import { ProductsModule } from './modules/v1/product/product.module';
 import { SshGateway } from './modules/v1/sockets/frondend/terminals/ssh.gateway';
 import { SshGatewayConnection } from './modules/v1/sockets/frondend/terminals/ssh.gatewayService';
 import knexConfig from 'src/config/database.config';
 import { ComputersModule } from './modules/v1/computer/copmuter.module';
 import { AgentsModule } from './modules/v1/agent/agent.module';
-import { AgentGateway } from './modules/v1/sockets/agent/agent.gateway';
 import { JwtService } from '@nestjs/jwt';
 import { join } from 'path';
-import { FrontendGateway } from './modules/v1/sockets/frondend/computers/computer.gateway';
 
 @Module({
   imports: [
@@ -47,8 +45,6 @@ import { FrontendGateway } from './modules/v1/sockets/frondend/computers/compute
     AppService,
     SshGateway,
     SshGatewayConnection,
-    AgentGateway,
-    FrontendGateway,
     JwtService,
   ],
   exports: [JwtService],
