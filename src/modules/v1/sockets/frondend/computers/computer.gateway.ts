@@ -104,9 +104,9 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
       return true;
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.log(`Token yaroqsiz! va computergateway: err.message: ${err.message}`);
+        console.log(`Token yaroqsiz! va computergateway err.message: ${err.message}`);
       } else {
-        console.log(`Token yaroqsiz! va computergateway: err.message: ${err}`);
+        console.log(`Token yaroqsiz! va computergateway err: ${err}`);
       }
       socket.disconnect();
       return false;
