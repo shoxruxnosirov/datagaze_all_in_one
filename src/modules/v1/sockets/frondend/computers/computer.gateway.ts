@@ -76,10 +76,6 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   responseCommand(computerId: string, data: { command: string; name: string; status: string }) {
-    console.log(
-      'frontendga yuborish: ',
-      `${computerId}_${data.command}_${data.name}: ${data.status}`,
-    );
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
