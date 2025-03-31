@@ -1,13 +1,11 @@
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
-  // OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-  // WsException,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { Client, Channel } from 'ssh2';
 import { randomUUID } from 'crypto';
 import * as pty from 'node-pty';
@@ -24,10 +22,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/config/env';
 
-// type FrontendSocketTerminal = Omit<Socket, 'data'> & {
-//     data: { sessions: Set<string> }
-// }
-
 @WebSocketGateway({ cors: true })
 export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
@@ -38,17 +32,15 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private jwtService: JwtService,
   ) {}
 
-  // private sessions = new Map<string, TerminalSession>();
-
-  async handleConnection(socket: FrontendSocketTerminal) {
+  handleConnection(socket: FrontendSocketTerminal) {
     this.tokenVerifying(socket);
-    // console.log(`SocketClient ulandi: ${socket.id}`);
+    console.log(`SocketClient ulandi: ${socket.id}`);
   }
 
-  async handleDisconnect(socket: FrontendSocketTerminal) {
+  handleDisconnect(socket: FrontendSocketTerminal) {
     console.log(`SocketClient uzildi: ${socket.id}`);
 
-    for (const [key, session] of socket.data.sessions) {
+    for (const session of socket.data.sessions.values()) {
       session.shell?.end();
       session.ptyTerm?.kill();
     }
@@ -57,7 +49,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('open_own_terminal')
   openTerminal(socket: FrontendSocketTerminal) {
-    const sessionId = randomUUID(); // Unikal ID yaratish
+    const sessionId = randomUUID();
     const session = {
       socket,
       shell: null,
@@ -68,7 +60,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       // }
     };
     this.connectBackEndTerm(socket, sessionId, session);
-    // this.sessions.set(sessionId, session);
     socket.data.sessions.set(sessionId, session);
     socket.emit('open_terminal', { sessionId });
   }
@@ -119,11 +110,15 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         config.productId,
       );
 
-      this.connectShell(socket, conn, sessionId, installScript);
-    } catch (error) {
+      this.connectShell(socket, conn, sessionId); //, installScript);
+    } catch (error: unknown) {
       // if(error.message.includes())
-      socket.emit('error', { sessionId, message: error.message });
-      console.log('gataway 140 error ', error);
+      if (error instanceof Error) {
+        socket.emit('error', { sessionId, message: error.message });
+      } else {
+        socket.emit('error', { sessionId, message: error });
+      }
+      console.log('gataway 122 error ', error);
       return;
     }
   }
@@ -152,21 +147,21 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('command')
-  handleCommand(socket: FrontendSocketTerminal, { sessionId, command }) {
-    const session = socket.data.sessions.get(sessionId);
+  handleCommand(socket: FrontendSocketTerminal, data: { sessionId: string; command: string }) {
+    const session = socket.data.sessions.get(data.sessionId);
     if (session) {
       if (session.shell) {
         // session.skipFunc.skipSlashNs?.(0);
         // session.skipFunc.skipData?.(0);
-        session.shell.write(command);
+        session.shell.write(data.command);
         // session.shell.write(`${command} ; echo -e ${this.prompt}\n`);
       } else if (session.ptyTerm) {
-        session.ptyTerm.write(command);
+        session.ptyTerm.write(data.command);
       } else {
-        socket.emit('error', { sessionId, message: 'terminal topilmadi...' });
+        socket.emit('error', { sessionId: data.sessionId, message: 'terminal topilmadi...' });
       }
     } else {
-      socket.emit('error', { sessionId, message: 'SSH sessiya topilmadi' });
+      socket.emit('error', { sessionId: data.sessionId, message: 'SSH sessiya topilmadi' });
     }
   }
 
@@ -226,16 +221,13 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     conn: Client,
     sessionId: string,
-    installScript?: string,
+    // installScript?: string,
   ) {
     conn.shell(
       {
-        term: 'xterm',
+        term: 'xterm-256color', //'xterm',
         cols: 80,
         rows: 20,
-        echo: false,
-        pty: false,
-        env: { LANG: 'en_US.UTF-8' },
       },
       (err: Error, stream: Channel) => {
         if (err) {
@@ -250,7 +242,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           // let skipSlashNsCount = 0;
           // let skipDataCount = 0;
 
-          const session = {
+          const session: TerminalSession = {
             socket,
             shell: stream,
             ptyTerm: null,
@@ -322,21 +314,25 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return false;
     }
     try {
-      //   const decoded: Payload = this.jwtService.verify(token, { secret: JWT_SECRET });
-      //   const payload: Payload = {
-      //     id: decoded.id,
-      //     role: decoded.role,
-      //   };
-      //   if (!(payload.role === Role.SUPER_ADMIN || payload.role === Role.ADMIN)) {
-      //     console.log("Ruxsat yo'q!");
-      //     socket.disconnect();
-      //     return false;
-      //   }
-      // console.log(`T ${decoded.role} ulandi id: ${payload.id}`);
+      const decoded: Payload = this.jwtService.verify(token, { secret: JWT_SECRET });
+      const payload: Payload = {
+        id: decoded.id,
+        role: decoded.role,
+      };
+      if (!(payload.role === Role.SUPER_ADMIN || payload.role === Role.ADMIN)) {
+        console.log("Ruxsat yo'q!");
+        socket.disconnect();
+        return false;
+      }
+      console.log(`TUU ${decoded.role} ulandi id: ${payload.id}`);
       socket.data = { sessions: new Map() };
       return true;
-    } catch (err) {
-      console.log('Token yaroqsiz!');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.log('Token yaroqsiz! or err: ' + err.message);
+      } else {
+        console.log(`token yaroqsiz? or err: ${err}`);
+      }
       socket.disconnect();
       return false;
     }

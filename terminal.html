@@ -8,6 +8,8 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
     <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl/lib/xterm-addon-webgl.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl/lib/xterm-addon-webgl.js"></script> -->
 
     <style>
         .terminal-wrapper {
@@ -75,6 +77,15 @@
 
         const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImYzYzllMWFkLWE4NzUtNGFlZi1iZTI1LWM1MGQwOGMxNjEwMiIsInJvbGUiOiJzdXBlcmFkbWluIiwiaWF0IjoxNzQzMzU2ODM3LCJleHAiOjE3NDM0MDAwMzd9.-0hfnR5kcxW1Ql27QfNS5zGnT2Qk7DKS2ElngHK7uOI';
 
+        document.addEventListener('keydown', function (event) {
+            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'c') {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log("Inspector bloklandi!");
+            }
+        });
+
+
         function initSocket() {
             if (!socket) {
                 socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
@@ -125,9 +136,9 @@
 
                 socket.on('installing', ({ sessionId, progress, eventName }) => {
                     const termObj = terminals.get(sessionId);
-                    console.log(eventName + ' : ' + progress+ '\n');
+                    console.log(eventName + ' : ' + progress + '\n');
                 });
-                
+
 
                 // socket.on('alert', () => {
                 //     console.log('Connected to server');
@@ -173,6 +184,11 @@
                 fontSize: 12,          // Font hajmi
                 theme: { background: "#000000" } // Qora fon
             });
+
+            // // WebGL qo'shish (tezroq ishlashi uchun)
+            // const webglAddon = new WebglAddon();
+            // term.loadAddon(webglAddon);
+
             term.open(terminalDiv);
 
             terminals.set(sessionId, term);
@@ -180,6 +196,31 @@
             term.onData(data => {
                 socket.emit('command', { sessionId, command: data });
             });
+
+            term.onKey(({ key, domEvent }) => {
+                if (domEvent.ctrlKey && domEvent.key === 'c') {
+                    domEvent.preventDefault();
+                    domEvent.stopPropagation();
+
+                    let selectedText = term.getSelection();
+                    if (selectedText) {
+                        navigator.clipboard.writeText(selectedText)
+                            .then(() => console.log('Matn nusxalandi'))
+                            .catch(err => console.error('Nusxalashda xatolik:', err));
+                    }
+                }
+            });
+
+            term.onKey(({ key, domEvent }) => {
+                if (domEvent.ctrlKey && domEvent.key === 'v') {
+
+                    domEvent.preventDefault();
+                    domEvent.stopPropagation();
+                    navigator.clipboard.readText().then(text => {
+                        socket.emit('command', { sessionId, command: text });
+                    }).catch(err => console.error('Paste qilishda xatolik:', err));
+                }
+            })
         }
 
         // Terminalni ochish yoki yopish

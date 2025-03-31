@@ -2,9 +2,9 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 
 import { Knex } from 'knex';
 
-import { ConnectConfig } from 'ssh2';
+// import { ConnectConfig } from 'ssh2';
 
-import { Product, Server } from 'src/comman/types';
+import { Server } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 // import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';

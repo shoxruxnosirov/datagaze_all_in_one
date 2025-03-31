@@ -49,7 +49,7 @@ const db = Knex(knexConfig);
     await db.schema.createTable('servers', function (table) {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('host').notNullable();
-      table.string('port').notNullable();
+      table.integer('port').notNullable();
       table.string('username').notNullable();
       // table.string('auth_type').notNullable();
       table.string('password').nullable();

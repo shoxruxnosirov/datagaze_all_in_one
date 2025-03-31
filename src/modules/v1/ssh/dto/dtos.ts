@@ -1,6 +1,6 @@
 export class ConnectDto {
   host: string;
-  port: string;
+  port: number;
   username: string;
   password?: string;
   privateKey?: string;

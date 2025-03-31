@@ -1,9 +1,6 @@
-import { Body, Controller, Get, Param, Post, Res, UseGuards } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 
-import { ConnectConfig } from 'ssh2';
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 
 import { ConnectDto } from './dto/dtos';

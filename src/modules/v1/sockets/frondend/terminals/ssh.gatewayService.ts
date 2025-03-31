@@ -6,9 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
-import { Socket } from 'socket.io';
-
-import { FrontendSocketTerminal, Message, Server, TerminalSession } from 'src/comman/types';
+import { FrontendSocketTerminal, TerminalSession } from 'src/comman/types';
 import { ConnectDto } from '../../../ssh/dto/dtos';
 import { WsException } from '@nestjs/websockets';
 
@@ -26,10 +24,12 @@ export class SshGatewayConnection {
     const { socket, conn, sessionId, session } = term;
 
     return new Promise((resolve, reject) => {
-      session.shell.end = () => {
-        conn.end();
-        reject(new WsException("connection jarayonda to'xtatildi"));
-      };
+      if (session.shell) {
+        session.shell.end = () => {
+          conn.end();
+          reject(new WsException("connection jarayonda to'xtatildi"));
+        };
+      }
       conn.on('ready', () => {
         // socket.emit('alert', {
         //     message: `${connectConfig.host}:${connectConfig.port} serverga ulandi\n`,
@@ -50,12 +50,12 @@ export class SshGatewayConnection {
           message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
         });
         // socket.disconnect();
-        reject(
-          // 'stoped'
-          new WsException(
-            `Server is not reachable. Please check the network connection. err: ${err.message}`,
-          ),
-        );
+        // reject(
+        //   'stoped'
+        //   // new WsException(
+        //   //   `Server is not reachable. Please check the network connection. err: ${err.message}`,
+        //   // ),
+        // );
       });
 
       conn.connect(connectConfig);
@@ -124,10 +124,12 @@ export class SshGatewayConnection {
   }): Promise<string> {
     const { socket, conn, sessionId, session } = term;
     return new Promise((resolve, reject) => {
-      session.shell.end = () => {
-        conn.end();
-        reject(new WsException(`Ulanilgan server OS turini aniqlashda  to\'xtatildi`));
-      };
+      if (session.shell) {
+        session.shell.end = () => {
+          conn.end();
+          reject(new WsException(`Ulanilgan server OS turini aniqlashda  to'xtatildi`));
+        };
+      }
 
       conn.exec(
         'uname -s 2>/dev/null || systeminfo | findstr /B /C:"OS Name"',
@@ -143,24 +145,26 @@ export class SshGatewayConnection {
             // return;
           }
 
-          session.shell.end = () => {
-            console.log('session.shell.end findOsType');
-            if (stream) {
-              stream.end();
-              stream.destroy();
-            }
-            conn.end();
-            socket.emit('alert', {
-              sessionId,
-              message: "os turni anilqlashda execda to'xtatildi!",
-            });
-            reject(new WsException(`Ulanilgan server OS turini aniqlashda exec da to\'xtatildi`));
-          };
+          if (session.shell) {
+            session.shell.end = () => {
+              console.log('session.shell.end findOsType');
+              if (stream) {
+                stream.end();
+                stream.destroy();
+              }
+              conn.end();
+              socket.emit('alert', {
+                sessionId,
+                message: "os turni anilqlashda execda to'xtatildi!",
+              });
+              reject(new WsException(`Ulanilgan server OS turini aniqlashda exec da to'xtatildi`));
+            };
+          }
 
           let osType = '';
 
           if (stream) {
-            stream.on('data', (data) => {
+            stream.on('data', (data: Buffer) => {
               osType += data.toString();
             });
 
@@ -213,12 +217,13 @@ export class SshGatewayConnection {
     return new Promise((resolve, reject) => {
       let remoteFile: string = '';
       // let remoteProjectPath: string = '';
-
-      session.shell.end = () => {
-        conn.end();
-        console.log(`Product uploads o'tish jarayonidan oldin to\'xtatildi`);
-        reject(new WsException(`Product uploads o'tish jarayonidan oldin to\'xtatildi`));
-      };
+      if (session.shell) {
+        session.shell.end = () => {
+          conn.end();
+          console.log(`Product uploads o'tish jarayonidan oldin to'xtatildi`);
+          reject(new WsException(`Product uploads o'tish jarayonidan oldin to'xtatildi`));
+        };
+      }
 
       if (osType === 'Windows') {
         remoteFile = 'C:\\Users\\Administrator\\Downloads\\' + path.basename(localProjectPath);
@@ -239,21 +244,23 @@ export class SshGatewayConnection {
           reject(new WsException(`Product uploads SFTP ulanish xatosi err: ${err.message}`));
         }
 
-        session.shell.end = async () => {
-          console.log('sesson.shell.end uploadProduct da chaqirildi');
-          readStream.destroy();
-          writeStream.destroy();
-          await this.deleteRemoteFile(sftp, remoteFile);
-          sftp.end();
-          reject(new WsException(`Product uploads o'tish jarayonida to\'xtatildi`));
-        };
+        if (session.shell) {
+          session.shell.end = async () => {
+            console.log('sesson.shell.end uploadProduct da chaqirildi');
+            readStream.destroy();
+            writeStream.destroy();
+            await this.deleteRemoteFile(sftp, remoteFile);
+            sftp.end();
+            reject(new WsException(`Product uploads o'tish jarayonida to'xtatildi`));
+          };
+        }
 
         const fileSize = fs.statSync(localProjectPath).size;
         let uploadedSize = 0;
 
         const writeStream = sftp?.createWriteStream?.(remoteFile);
         if (!writeStream) {
-          reject('stopped');
+          reject(new WsException('stopped'));
           return;
         }
         const readStream = fs.createReadStream(localProjectPath);
@@ -312,7 +319,7 @@ export class SshGatewayConnection {
           });
 
           conn.exec(
-            installScript, // osType === 'Linux' ? linuxCommands : windowsCommands,
+            installScript || '', // osType === 'Linux' ? linuxCommands : windowsCommands,
             (err: Error, stream: ClientChannel) => {
               if (err) {
                 socket.emit('error', {
@@ -327,24 +334,30 @@ export class SshGatewayConnection {
                   ),
                 );
               }
-              session.shell.end = () => {
-                conn.exec(
-                  osType === 'windows'
-                    ? `powershell -Command "Remove-Item -Path '${remoteFile}' -Force"`
-                    : `sudo rm -f "${remoteFile}"`,
-                  (err: Error, stream: SFTPWrapper) => {
-                    if (err) {
-                      // resolve qilib jarayonni ushlab qolish kerakdir balki
-                      reject(
-                        new WsException(
-                          `installing jarayonini to\'xtatishda xatolik: ${err.message}`,
-                        ),
-                      );
-                    }
-                  },
-                );
-                reject(new WsException('exec da stopped'));
-              };
+              if (session.shell) {
+                session.shell.end = () => {
+                  conn.exec(
+                    osType === 'windows'
+                      ? `powershell -Command "Remove-Item -Path '${remoteFile}' -Force"`
+                      : `sudo rm -f "${remoteFile}"`,
+                    (err: Error | undefined, stream: ClientChannel) => {
+                      if (err) {
+                        // resolve qilib jarayonni ushlab qolish kerakdir balki
+                        reject(
+                          new WsException(
+                            `installing jarayonini to'xtatishda xatolik: ${err.message}`,
+                          ),
+                        );
+                        return;
+                      }
+                      stream.on('data', (data: Buffer) => {
+                        console.log('STDOUT:', data.toString());
+                      });
+                    },
+                  );
+                  reject(new WsException('exec da stopped'));
+                };
+              }
               stream.on('data', (data: Buffer) => {
                 const formattedData = data.toString(); //.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
                 socket.emit('data', { sessionId, output: formattedData });
@@ -394,7 +407,9 @@ export class SshGatewayConnection {
           sftp.end();
         });
 
-        writeStream && readStream.pipe(writeStream);
+        if (writeStream) {
+          readStream.pipe(writeStream);
+        }
       });
     });
   }

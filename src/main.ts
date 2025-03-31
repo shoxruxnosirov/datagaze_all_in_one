@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core';
-import * as express from 'express';
 
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';

@@ -1,4 +1,4 @@
-import { Injectable, Inject, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ComputerRepository } from 'src/database/repositories/computer.repository';
 import { CreateComputerDto } from './dto/computer';
 import { AGENT_TOKEN_SECRET } from 'src/config/env';

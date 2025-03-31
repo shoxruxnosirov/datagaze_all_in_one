@@ -15,7 +15,7 @@ export type FrontendSocketTerminal = Omit<Socket, 'data'> & {
 
 export type TerminalSession = {
   socket: FrontendSocketTerminal;
-  shell: Channel | null; // | {write: (com: string) => void, end: () => void};
+  shell: Channel | null | { write: () => void; end: () => void };
   ptyTerm: pty.IPty | null;
   // skipFunc: {
   //     skipSlashNs: ((value: number) => void) | null
@@ -58,7 +58,7 @@ export enum AuthType {
 export type Server = Knex.QueryBuilder & {
   id?: string;
   host: string;
-  port: string;
+  port: number;
   username: string;
   password?: string;
   privateKey?: string;
@@ -208,8 +208,8 @@ export type Computer = {
   cpu: string;
   model: string;
   cores: number;
-  network_adapters: NetworkAdapter[];
-  disks: Disk[];
+  network_adapters: string; //NetworkAdapter[];
+  disks: string; //Disk[];
 };
 
 export type ComputerForList = {
@@ -220,3 +220,19 @@ export type ComputerForList = {
   activity?: string;
   ipAddress?: string;
 };
+
+export type AgentSocket = Omit<Socket, 'data'> & {
+  data: PayloadAgent;
+};
+
+export type ProductListsForGetAll = {
+  id: string;
+  name: string;
+  version: string;
+  icon: string;
+  installed: boolean;
+  publisher: string;
+  agentVersion: string;
+  serverFileSize: string;
+  agentFileSize: string;
+}[];

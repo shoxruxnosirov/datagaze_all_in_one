@@ -44,7 +44,12 @@ export class AdminController {
   async loginAdmin(@Body() loginAdminDto: LoginAdminDto): Promise<MessageforLogin> {
     try {
       return this.adminService.login(loginAdminDto);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.log(`admin login err.message: ${err.message}`);
+      } else {
+        console.log(`admin login err: ${err}`);
+      }
       throw new HttpException(
         {
           status: 'error',
@@ -189,7 +194,7 @@ export class AdminController {
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @ApiOperation({ summary: 'refresh token with refresh_token' })
   @ApiBearerAuth()
-  async refreshToken(@Req() req: GuardRequest): Promise<Tokens> {
+  refreshToken(@Req() req: GuardRequest): Tokens {
     return this.adminService.refreshTokens(req.user);
   }
 }

@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { Message, Server, ProductList, ProductOne } from 'src/comman/types';
+import { Message, ProductList, ProductOne } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from '../ssh/dto/dtos';
 

@@ -4,7 +4,7 @@ import { Response } from 'express';
 
 import { SshConnection } from './ssh.connection';
 import { SshRepository } from 'src/database/repositories/server.repository';
-import { Message, Product, Server } from 'src/comman/types';
+import { Server } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import { ConnectDto } from './dto/dtos';
 

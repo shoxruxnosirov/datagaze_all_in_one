@@ -4,16 +4,13 @@ import {
   Post,
   Body,
   Param,
-  Query,
-  ParseUUIDPipe,
   Res,
   Req,
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
 import { AgentsService } from './agent.service';
-import { Computer } from './entities/computer.model';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateComputerDto } from './dto/computer';
 import { Response } from 'express';
 import { join } from 'path';

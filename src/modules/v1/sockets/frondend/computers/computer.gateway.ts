@@ -5,19 +5,15 @@ import {
   OnGatewayDisconnect,
   SubscribeMessage,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { AgentGateway } from '../../agent/agent.gateway';
-import { Payload } from 'src/comman/types';
+import { FrontendSocket, Payload } from 'src/comman/types';
 import { JWT_SECRET } from 'src/config/env';
 import { JwtService } from '@nestjs/jwt';
 
-type FrontendSocket = Omit<Socket, 'data'> & {
-  data: Payload;
-};
-
 @Injectable()
-@WebSocketGateway(3006, { cors: { origin: '*' } }) // Frontend uchun socket
+@WebSocketGateway(3006, { cors: { origin: '*' } })
 export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
   private commands = new Map<string, FrontendSocket>();
@@ -29,22 +25,22 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     private readonly agentGateway: AgentGateway,
   ) {}
 
-  async handleConnection(socket: FrontendSocket) {
+  handleConnection(socket: FrontendSocket) {
     this.tokenVerifying(socket);
   }
 
-  async handleDisconnect(socket: FrontendSocket) {
+  handleDisconnect(socket: FrontendSocket) {
     console.log(`CMU ${socket.data.role} uzildi id: ${socket.data.id}`);
   }
 
   @SubscribeMessage('get_active_agents')
-  async handleGetActiveAgents(socket: FrontendSocket) {
+  handleGetActiveAgents(socket: FrontendSocket) {
     const activeAgents = this.agentGateway.activeAgents();
     socket.emit('active_agents', { agents: activeAgents });
   }
 
   @SubscribeMessage('command')
-  async handleCommand(
+  handleCommand(
     socket: FrontendSocket,
     payload: { computerId: string; name: string; command: string },
   ) {
@@ -65,7 +61,7 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   @SubscribeMessage('delete_agent')
-  async _deleteAgent(socket: FrontendSocket, payload: { computerId: string }) {
+  _deleteAgent(socket: FrontendSocket, payload: { computerId: string }) {
     const result = this.agentGateway.deleteAgent(payload.computerId);
     console.log(result);
     if (result === "agnetni o'chirish buytuq yuborildi") {
@@ -79,7 +75,7 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  async responseCommand(computerId: string, data: any) {
+  responseCommand(computerId: string, data: { command: string; name: string; status: string }) {
     console.log(
       'frontendga yuborish: ',
       `${computerId}_${data.command}_${data.name}: ${data.status}`,
@@ -87,7 +83,7 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
     this.commands.get(`${computerId}_${data.command}_${data.name}`)?.emit('data', data);
   }
 
-  async deleteAgent(computerId: string, status: string) {
+  deleteAgent(computerId: string, status: string) {
     this.commands.get(`${computerId}_delete_agent`)?.emit('delete_agent', { computerId, status });
   }
 
@@ -110,8 +106,12 @@ export class FrontendGateway implements OnGatewayConnection, OnGatewayDisconnect
       socket.data = payload;
       console.log(`CMU ${decoded.role} ulandi id: ${payload.id}`);
       return true;
-    } catch (err) {
-      console.log('Token yaroqsiz!');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.log(`Token yaroqsiz! va computergateway: err.message: ${err.message}`);
+      } else {
+        console.log(`Token yaroqsiz! va computergateway: err.message: ${err}`);
+      }
       socket.disconnect();
       return false;
     }

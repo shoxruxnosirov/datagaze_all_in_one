@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 
 import { JwtService } from '@nestjs/jwt';
 
@@ -76,7 +76,7 @@ export class AdminService {
     return await this.adminRepository.updateProfile(data.id, data.updateProfileData);
   }
 
-  async deleteAdminBySuperadmin(id): Promise<Message> {
+  async deleteAdminBySuperadmin(id: string): Promise<Message> {
     return this.adminRepository.deleteAdminBySuperadmin(id);
   }
 

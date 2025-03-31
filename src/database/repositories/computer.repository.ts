@@ -126,8 +126,7 @@ export class ComputerRepository {
       disks: JSON.stringify(computerData.disks),
     };
 
-    // INSERT yoki UPDATE bo‘lgan satrni tekshirish
-    const query = this.knex('computers')
+    const query = this.knex<Computer & { is_inserted: string }>('computers')
       .insert(dataToInsert)
       .onConflict('key')
       .merge()
@@ -136,22 +135,26 @@ export class ComputerRepository {
     const [computer] = await query;
     console.log('computer: ', computer);
 
-    // `is_inserted` = true bo‘lsa, INSERT bo‘lgan, aks holda UPDATE
     const status = computer.is_inserted ? 'registered' : 'updated';
 
-    return {
-      computerId: computer.id,
-      key,
-      status,
-    };
+    if (computer?.id) {
+      return {
+        computerId: computer.id,
+        key,
+        status,
+      };
+    } else {
+      throw new HttpException('Computer not found', HttpStatus.NOT_FOUND);
+    }
   }
 
   async applicationRegister(
     applications: ApplicationDto[],
     computerId: string,
   ): Promise<{ name: string; status: string }[]> {
-    return await this.knex('applications')
-      // 1. O'chirish uchun CTE
+    type AppStatus = { name: string; status: 'deleted' | 'registered' | 'updated' };
+
+    return await this.knex<Application>('applications')
       .with('deleted_apps', (qb) => {
         qb.from('applications')
           .where('computerId', computerId)
@@ -162,7 +165,6 @@ export class ComputerRepository {
           .del()
           .returning(['name', this.knex.raw("'deleted' AS status")]);
       })
-      // 2. Yangi ma'lumotlarni qo'shish yoki yangilash
       .insert(applications)
       .onConflict(['computerId', 'name'])
       .merge({
@@ -170,11 +172,11 @@ export class ComputerRepository {
         size: this.knex.raw('EXCLUDED.size'),
         type: this.knex.raw('EXCLUDED.type'),
       })
-      .returning([
+      .returning<AppStatus[]>([
         'name',
         this.knex.raw("CASE WHEN xmax = 0 THEN 'registered' ELSE 'updated' END AS status"),
       ])
-      // 3. Natijalarni birlashtirish
+      // .as<AppStatus[]>()
       .unionAll(this.knex.select('*').from('deleted_apps'));
   }
 

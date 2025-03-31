@@ -1,26 +1,16 @@
-import {
-  HttpException,
-  HttpStatus,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Writable } from 'stream';
-import { Client, ConnectConfig, SFTPWrapper, ClientChannel } from 'ssh2';
+import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
-import { Message, Server } from 'src/comman/types';
+import { Message } from 'src/comman/types';
 import { ConnectDto } from './dto/dtos';
 import { Response } from 'express';
-import { Readable } from 'stream';
 
 @Injectable()
 export class SshConnection {
-  // private sshClient: Client;
-  // private isConnected: boolean = false;
-  constructor() {
-    // this.sshClient = new Client;
-  }
+  constructor() {}
 
   private async connectToServer(connectConfig: ConnectDto, res: Response): Promise<Client> {
     const sshClient = new Client();
@@ -88,7 +78,7 @@ export class SshConnection {
       serverCredentials: ConnectDto;
     },
     res: Response,
-  ): Promise<string | any> {
+  ): Promise<void> {
     const conn = await this.connectToServer(config.serverCredentials, res);
 
     const osType = await this.findOsType(conn, res);
@@ -130,7 +120,7 @@ export class SshConnection {
 
           let osType = '';
 
-          stream.on('data', (data) => {
+          stream.on('data', (data: Buffer) => {
             osType += data.toString();
           });
 
@@ -315,26 +305,26 @@ export class SshConnection {
     localProjectPath: string,
     osType: string,
     res: Response,
-    srartCommend: string,
+    startCommend: string,
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       let remoteFile: string = '';
-      let remoteProjectPath: string = '';
+      // let remoteProjectPath: string = '';
 
       if (osType === 'Windows') {
         localProjectPath = path.join(localProjectPath, 'product.zip');
         remoteFile = 'C:\\Users\\Administrator\\Downloads\\product.zip';
-        remoteProjectPath = 'C:';
+        // remoteProjectPath = 'C:';
       } //if (osType === 'Linux')
       else {
         localProjectPath = path.join(localProjectPath, 'product.tar.xz');
         remoteFile = `product.tar.xz`;
-        remoteProjectPath = '/var/www';
+        // remoteProjectPath = '/var/www';
       }
 
       console.log('remoteFile: ', remoteFile);
 
-      console.log('remoteProjectPath: ', remoteProjectPath);
+      // console.log('remoteProjectPath: ', remoteProjectPath);
 
       // Faylni serverga yuborish
       conn.sftp((err: Error, sftp: SFTPWrapper) => {
@@ -372,46 +362,47 @@ export class SshConnection {
           console.log('📦 Fayl serverga yuklandi. Endi arxivdan ochilmoqda...');
           res.write(`Product uploading comlated \n`);
 
-          const linuxCommands = `
-            sudo rm -rf "${remoteProjectPath}"
-            sudo mkdir -p "${remoteProjectPath}"
-                      
-            sudo tar -xf ${remoteFile} -C ${remoteProjectPath}
-  
-            cd ${remoteProjectPath}/product
-            
-            # npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz 
-            # npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz 
-            # pm2 start server.js --name my-nest-app --watch
+          // const linuxCommands = `
+          //   sudo rm -rf "${remoteProjectPath}"
+          //   sudo mkdir -p "${remoteProjectPath}"
 
-            # node -v
-            # npm -v
-            
-            # pm2 save
-            # pm2 startup
+          //   sudo tar -xf ${remoteFile} -C ${remoteProjectPath}
 
-          `;
+          //   cd ${remoteProjectPath}/product
 
-          const windowsCommands = `
+          //   # npm cache add ${remoteProjectPath}/product/pm2-5.4.3.tgz
+          //   # npm install -g ${remoteProjectPath}/product/pm2-5.4.3.tgz
+          //   # pm2 start server.js --name my-nest-app --watch
 
-            powershell -Command "Expand-Archive -Path ${remoteFile} -DestinationPath ${remoteProjectPath} -Force"
+          //   # node -v
+          //   # npm -v
 
-            npm cache add ${remoteProjectPath}\\product\\pm2-5.4.3.tgz
+          //   # pm2 save
+          //   # pm2 startup
 
-            npm install -g "${remoteProjectPath}\\product\\pm2-5.4.3.tgz"
+          // `;
 
-            pm2 --version
+          // const windowsCommands = `
 
-            cd "${remoteProjectPath}\\product"
+          //   powershell -Command "Expand-Archive -Path ${remoteFile} -DestinationPath ${remoteProjectPath} -Force"
 
-            pm2 start npm --name my-nest-app -- run start:prod
+          //   npm cache add ${remoteProjectPath}\\product\\pm2-5.4.3.tgz
 
-            pm2 save
-            pm2 startup
-          `;
+          //   npm install -g "${remoteProjectPath}\\product\\pm2-5.4.3.tgz"
+
+          //   pm2 --version
+
+          //   cd "${remoteProjectPath}\\product"
+
+          //   pm2 start npm --name my-nest-app -- run start:prod
+
+          //   pm2 save
+          //   pm2 startup
+          // `;
 
           conn.exec(
-            osType === 'Linux' ? linuxCommands : windowsCommands,
+            startCommend,
+            // osType === 'Linux' ? linuxCommands : windowsCommands,
             (err: Error, stream: ClientChannel) => {
               if (err) {
                 res.write(`Product deloying Error: ${err.message}\n`);

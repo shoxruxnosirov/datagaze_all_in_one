@@ -1,11 +1,7 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { Knex } from 'knex';
+import { Injectable } from '@nestjs/common';
 import { ComputerRepository } from 'src/database/repositories/computer.repository';
 import { AgentGateway } from '../sockets/agent/agent.gateway';
 import { Application, Computer, ComputerForList, ListWithPagination } from 'src/comman/types';
-// import { Computer } from "./entities/computer.model";
-// import { IComputer } from "./interface/computer";
-// import { IApplication } from "./interface/application";
 
 @Injectable()
 export class ComputersService {
