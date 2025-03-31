@@ -147,7 +147,7 @@ const db = Knex(knexConfig);
       table.integer('ram').notNullable();
       table.integer('free_ram').defaultTo(50);
       table.string('cpu').notNullable();
-      table.string('model').notNullable();
+      table.string('model').nullable();
       table.integer('cores').notNullable();
       table.jsonb('network_adapters').notNullable();
       table.jsonb('disks').notNullable();

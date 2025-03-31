@@ -30,6 +30,7 @@ export class AgentsController {
   ): Promise<Response> {
     const { token, status } = await this.agentsService.createOrUpdate(computerData);
     console.log('agent: ', computerData.hostname, '\nstatus: ', status);
+    console.log('agent token: ', token);
     return res.status(status === 'registered' ? 201 : 200).json({ token, status });
   }
 
@@ -42,7 +43,7 @@ export class AgentsController {
     @Req() req: RequestAgent,
     @Res() res: Response,
   ): Promise<Response> {
-    // console.log('computer: ', req.agent);
+    console.log('computerapps: ', applications);
     const uniqueApps = Array.from(
       new Map(
         applications.map((app) => {

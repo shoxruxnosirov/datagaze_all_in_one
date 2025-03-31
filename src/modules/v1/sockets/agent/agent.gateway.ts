@@ -79,6 +79,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return false;
     }
     try {
+      console.log('guard dan token: ', token);
       const decoded: PayloadAgent = this.jwtService.verify(token, { secret: AGENT_TOKEN_SECRET });
       const payload: PayloadAgent = {
         computerId: decoded.computerId,

@@ -53,8 +53,8 @@ export class CreateComputerDto {
   @IsString()
   cpu: string;
 
-  @IsString()
-  model: string;
+  // @IsString()
+  model?: string;
 
   @IsInt()
   cores: number;
