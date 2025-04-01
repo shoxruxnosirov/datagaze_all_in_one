@@ -7,10 +7,10 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { forwardRef, Inject, Injectable } from '@nestjs/common';
-import { AgentGateway } from '../../agent/agent.gateway';
 import { FrontendSocket, Payload } from 'src/comman/types';
 import { JWT_SECRET } from 'src/config/env';
 import { JwtService } from '@nestjs/jwt';
+import { AgentGateway } from '../../agent/agent.gateway';
 
 @Injectable()
 @WebSocketGateway(3006, { cors: { origin: '*' } })
