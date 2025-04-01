@@ -31,8 +31,12 @@ export class AgentGuard implements CanActivate {
       request.agent = payload;
 
       return true;
-    } catch (err) {
-      throw new UnauthorizedException('Yaroqsiz token');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw new UnauthorizedException('Yaroqsiz token');
+      } else {
+        throw err;
+      }
     }
   }
 }

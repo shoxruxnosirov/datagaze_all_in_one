@@ -12,7 +12,7 @@ import {
 import { Knex } from 'knex';
 import * as bcrypt from 'bcryptjs';
 
-import { Admin, Admin2, Message, Payload } from 'src/comman/types';
+import { Admin, Admin2, Message, Payload, Role } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { UpdateAdminProfileDto } from 'src/modules/v1/admin/dto/update';
 import { LoginAdminDto } from 'src/modules/v1/admin/dto/login';
@@ -23,7 +23,7 @@ export class AdminRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
   async loginAdmin(admin: LoginAdminDto): Promise<Admin> {
-    const data: Admin = await this.knex('admins')
+    const data: Admin | undefined = await this.knex<Admin>('admins')
       .select('*')
       .where({ username: admin.username })
       .first();
@@ -57,28 +57,39 @@ export class AdminRepository {
       }
 
       return result[0];
-    } catch (error) {
-      if (error.code === '23505') {
-        // '23505' - unique violation PostgreSQL kod
-        throw new ConflictException({
-          status: 'error',
-          message: 'Username already taken',
-        });
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error) {
+        const pgError = error as Error & { code: string };
+
+        if (pgError.code === '23505') {
+          throw new ConflictException({
+            status: 'error',
+            message: 'Username already taken',
+          });
+        }
       }
 
-      throw new BadRequestException(`Database error: ${error.message}`);
+      if (error instanceof Error) {
+        throw new BadRequestException(`Database error: ${error.message}`);
+      } else {
+        throw error;
+      }
     }
   }
 
   async getAllAdmins(): Promise<Admin2[]> {
     try {
-      const result = await this.knex('admins')
+      const result = await this.knex<Admin>('admins')
         .select(['id', 'name', 'username', 'email', 'createdAt'])
-        .where({ role: 'admin' });
+        .where({ role: Role.ADMIN });
 
       return result; // Type assertion ishlatish;
-    } catch (error) {
-      throw new BadRequestException(`Database error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new BadRequestException(`Database error: ${error.message}`);
+      } else {
+        throw error;
+      }
     }
   }
 
@@ -94,11 +105,15 @@ export class AdminRepository {
       } else {
         return result;
       }
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error instanceof NotFoundException) {
+          throw error;
+        } else {
+          throw new BadRequestException(`Database error: ${error.message}`);
+        }
       } else {
-        throw new BadRequestException(`Database error: ${error.message}`);
+        throw error;
       }
     }
   }
@@ -135,7 +150,9 @@ export class AdminRepository {
     data: { oldPassword: string; newPassword: string },
     admin: Payload,
   ): Promise<Message> {
-    const existingAdmin: Admin = await this.knex('admins').where({ id: admin.id }).first();
+    const existingAdmin: Admin | undefined = await this.knex<Admin>('admins')
+      .where({ id: admin.id })
+      .first();
 
     if (!existingAdmin) {
       throw new NotFoundException({

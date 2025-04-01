@@ -12,6 +12,7 @@ import { Knex } from 'knex';
 import { Message, Server, ProductOne, Product, ProductListsForGetAll } from 'src/comman/types';
 
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
+import { CreateProductDto } from 'src/modules/v1/product/dto/addProcuct.dto';
 import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 
 @Injectable()
@@ -19,7 +20,8 @@ export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
   async getAllProducts(): Promise<ProductListsForGetAll> {
-    return (await this.knex<Product>('products').select('products.*')).map((product) => ({
+    const result = await this.knex<Product>('products').select('*');
+    return result.map((product) => ({
       id: product.id,
       name: product.name,
       icon: product.icon,
@@ -55,18 +57,19 @@ export class ProductRepository {
           throw new BadRequestException(`Database error: ${error.message}`);
         }
       } else {
-        console.log('get product for deploy err: ' + error);
+        // console.log('get product for deploy err: ' + error);
         throw new BadRequestException(`Database error: ${error}`);
       }
     }
   }
 
   async getProduct(id: string): Promise<ProductOne> {
-    const product: Product & { serverhost: string | null } = await this.knex<Product>('products')
+    const product = (await this.knex<Product>('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .where('products.id', id)
       .select('products.*', this.knex.raw('servers.host as serverhost'))
-      .first();
+      .first()) as Product & { serverhost: string | null };
+
     if (product === undefined) {
       throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
     } else {
@@ -137,7 +140,7 @@ export class ProductRepository {
   }
 
   async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<Message> {
-    const result: Server[] = await this.knex('servers')
+    const result = await this.knex<Server>('servers')
       .update(serverData)
       .where('id', this.knex.select('serverId').from('products').where('id', productId))
       .returning('*');
@@ -217,7 +220,7 @@ export class ProductRepository {
     };
   }
 
-  async create(productData: any): Promise<Message & { id: string }> {
+  async create(productData: CreateProductDto): Promise<Message & { id: string }> {
     try {
       const [insertedId] = await this.knex<Product>('products').insert(productData).returning('id');
 

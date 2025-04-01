@@ -229,10 +229,10 @@ export type ProductListsForGetAll = {
   id: string;
   name: string;
   version: string;
-  icon: string;
+  icon?: string;
   installed: boolean;
   publisher: string;
   agentVersion: string;
-  serverFileSize: string;
-  agentFileSize: string;
+  serverFileSize: number;
+  agentFileSize: number;
 }[];

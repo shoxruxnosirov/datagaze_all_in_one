@@ -41,7 +41,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('delete_agent')
-  _deleteAgent(socket: AgentSocket, data: { status: string, message: string }) {
+  _deleteAgent(socket: AgentSocket, data: { status: string; message: string }) {
     console.log('agent uchirilidi: ', data);
     this.frondendSocket.deleteAgent(socket.data.computerId, data);
   }

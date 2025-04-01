@@ -2,7 +2,7 @@ import * as Knex from 'knex';
 import * as bcrypt from 'bcryptjs';
 
 import knexConfig from 'src/config/database.config';
-const path = require('path');
+
 const db = Knex(knexConfig);
 
 (async function () {
@@ -94,48 +94,6 @@ const db = Knex(knexConfig);
       table.timestamp('lastUploadAt').defaultTo(db.fn.now());
     });
 
-    // await db('products').insert({
-    //   id: db.raw('uuid_generate_v4()'),
-    //   name: 'DLP',
-    //   icon: 'icons/launchpad/dlp.png',
-    //   version: '2.4.5',
-    //   fileUrl: path.join(process.cwd(), 'products/dlp'),
-    //   // download_path: '/downloads/superadmin.zip',
-    //   serverId: null,
-    //   size: 1300, // MB
-    //   company: 'Datagaze',
-    //   description: 'Datagaze DLP',
-    //   supportOS: 'Windows, Linux, MacOS',
-    //   requiredCpuCore: 8,
-    //   requiredRam: 16, // MB
-    //   requiredStorage: 500, // MB
-    //   requiredNetwork: 1, // Mbps
-    //   computerCount: 0,
-    //   firstUploadAt: null,
-    //   lastUploadAt: null,
-    // });
-
-    // await db('products').insert({
-    //   id: db.raw('uuid_generate_v4()'),
-    //   name: 'WAF',
-    //   icon: 'icons/launchpad/waf.png',
-    //   version: '2.6.3',
-    //   fileUrl: path.join(process.cwd(), 'products/waf'),
-    //   // download_path: '/downloads/superadmin.zip',
-    //   serverId: null,
-    //   size: 1300, // MB
-    //   company: 'Datagaze',
-    //   description: 'Datagaze WAF',
-    //   supportOS: 'Windows, Linux, MacOS',
-    //   requiredCpuCore: 8,
-    //   requiredRam: 16, // MB
-    //   requiredStorage: 500, // MB
-    //   requiredNetwork: 1, // Mbps
-    //   computerCount: 0,
-    //   firstUploadAt: null,
-    //   lastUploadAt: null,
-    // });
-
     await db.schema.createTable('computers', (table) => {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('key').notNullable().unique();
@@ -169,7 +127,7 @@ const db = Knex(knexConfig);
     await db.destroy();
 
     console.log('db jadvallar yaratildi!');
-  } catch (err) {
+  } catch (err: unknown) {
     console.log('db jadvallarni yaratishda xatolik: ', err);
     await db.destroy();
   }

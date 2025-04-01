@@ -12,6 +12,6 @@ import { ComputersModule } from '../computer/copmuter.module';
   imports: [DatabaseModule, forwardRef(() => ComputersModule)],
   controllers: [AgentsController],
   providers: [AgentsService, ComputerRepository, JwtService, AgentGateway],
-  exports: [AgentGateway]
+  exports: [AgentGateway],
 })
 export class AgentsModule {}

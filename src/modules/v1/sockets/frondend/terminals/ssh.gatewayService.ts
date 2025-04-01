@@ -245,13 +245,15 @@ export class SshGatewayConnection {
         }
 
         if (session.shell) {
-          session.shell.end = async () => {
-            console.log('sesson.shell.end uploadProduct da chaqirildi');
-            readStream.destroy();
-            writeStream.destroy();
-            await this.deleteRemoteFile(sftp, remoteFile);
-            sftp.end();
-            reject(new WsException(`Product uploads o'tish jarayonida to'xtatildi`));
+          session.shell.end = () => {
+            void (async () => {
+              console.log('sesson.shell.end uploadProduct da chaqirildi');
+              readStream.destroy();
+              writeStream.destroy();
+              await this.deleteRemoteFile(sftp, remoteFile);
+              sftp.end();
+              reject(new WsException(`Product uploads o'tish jarayonida to'xtatildi`));
+            })();
           };
         }
 

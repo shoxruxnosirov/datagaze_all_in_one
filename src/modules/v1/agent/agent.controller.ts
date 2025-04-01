@@ -79,9 +79,7 @@ export class AgentsController {
       'Transfer-Encoding': 'chunked',
     });
 
-    // const readStream = createReadStream(filePath);
-
-    const readStream = createReadStream(filePath, { highWaterMark: 16 * 1024 });
+    const readStream = createReadStream(filePath); // , { highWaterMark: 64 * 1024 }
     readStream.pipe(res);
   }
 }

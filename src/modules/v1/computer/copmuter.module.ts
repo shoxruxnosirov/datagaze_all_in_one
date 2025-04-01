@@ -13,6 +13,6 @@ import { AgentsModule } from '../agent/agent.module';
   imports: [DatabaseModule, AdminModule, forwardRef(() => AgentsModule)],
   controllers: [ComputersController],
   providers: [ComputersService, ComputerRepository, JwtService, FrontendGateway],
-  exports: [FrontendGateway]
+  exports: [FrontendGateway],
 })
-export class ComputersModule { }
+export class ComputersModule {}

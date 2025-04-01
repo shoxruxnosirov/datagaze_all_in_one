@@ -40,8 +40,12 @@ export class RolesGuard implements CanActivate {
       if (userRole === Role.ADMIN) {
         try {
           await this.adminRepository.getOneAdmin(decoded.id);
-        } catch (err) {
-          throw new ForbiddenException('You do not have permission to access this resource');
+        } catch (err: unknown) {
+          if(err instanceof Error) {
+            throw new ForbiddenException('You do not have permission to access this resource');
+          } else {
+            throw err;
+          }
         }
       }
 
@@ -55,11 +59,15 @@ export class RolesGuard implements CanActivate {
         throw new ForbiddenException("Sizga ruxsat yo'q");
       }
       return true;
-    } catch (err) {
-      if (err instanceof ForbiddenException) {
-        throw err;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        if (err instanceof ForbiddenException) {
+          throw err;
+        } else {
+          throw new UnauthorizedException('Yaroqsiz token');
+        }
       } else {
-        throw new UnauthorizedException('Yaroqsiz token');
+        throw err;
       }
     }
   }

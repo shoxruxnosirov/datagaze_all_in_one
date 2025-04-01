@@ -41,12 +41,7 @@ import { join } from 'path';
     ),
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    SshGateway,
-    SshGatewayConnection,
-    JwtService,
-  ],
+  providers: [AppService, SshGateway, SshGatewayConnection, JwtService],
   exports: [JwtService],
 })
 export class AppModule {}
