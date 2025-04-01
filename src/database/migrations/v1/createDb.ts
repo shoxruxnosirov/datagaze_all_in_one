@@ -7,20 +7,16 @@ const db = Knex(knexConfig);
 
 (async function () {
   try {
-    await db.schema.dropTableIfExists('Admins');
+
     await db.schema.dropTableIfExists('admins');
 
     await db.schema.dropTableIfExists('products');
-    await db.schema.dropTableIfExists('Products');
 
     await db.schema.dropTableIfExists('servers');
-    await db.schema.dropTableIfExists('Servers');
 
     await db.schema.dropTableIfExists('applications');
-    await db.schema.dropTableIfExists('Applications');
 
     await db.schema.dropTableIfExists('computers');
-    await db.schema.dropTableIfExists('Computers');
 
     const SUPERADMIN_PASSWORD: string = await bcrypt.hash('superadmin', 10);
 
@@ -62,7 +58,7 @@ const db = Knex(knexConfig);
     await db.schema.createTable('products', function (table) {
       table.uuid('id').defaultTo(db.raw('uuid_generate_v4()')).primary();
       table.string('name').notNullable();
-      table.text('icon').nullable();
+      table.text('icon').notNullable();
 
       table.string('serverVersion').notNullable();
       table.string('agentVersion').notNullable();
@@ -89,7 +85,7 @@ const db = Knex(knexConfig);
       table.text('updateScript').nullable();
       table.text('deleteScript').nullable();
 
-      table.integer('computerCount').notNullable().defaultTo(0);
+      table.integer('computerCount').defaultTo(0);
       table.timestamp('firstUploadAt').defaultTo(db.fn.now());
       table.timestamp('lastUploadAt').defaultTo(db.fn.now());
     });

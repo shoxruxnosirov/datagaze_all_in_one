@@ -2,7 +2,6 @@ import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   UnauthorizedException,
 } from '@nestjs/common';
 
@@ -19,7 +18,7 @@ export class AgentGuard implements CanActivate {
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      throw new ForbiddenException('Token topilmadi');
+      throw new UnauthorizedException('Token topilmadi');
     }
 
     try {
@@ -33,7 +32,7 @@ export class AgentGuard implements CanActivate {
       return true;
     } catch (err: unknown) {
       if (err instanceof Error) {
-        throw new UnauthorizedException('Yaroqsiz token');
+        throw new UnauthorizedException(err.message);
       } else {
         throw err;
       }

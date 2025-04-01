@@ -30,7 +30,7 @@ export class RolesGuardForRefreshToken implements CanActivate {
     const token = request.headers.authorization?.split(' ')[1];
 
     if (!token) {
-      throw new ForbiddenException('Token topilmadi');
+      throw new UnauthorizedException('Token topilmadi');
     }
 
     try {

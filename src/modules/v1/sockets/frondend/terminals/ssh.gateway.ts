@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  WsException,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
 import { Client, Channel } from 'ssh2';
@@ -30,7 +31,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sshGatewayConn: SshGatewayConnection,
     private productRepository: ProductRepository,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   handleConnection(socket: FrontendSocketTerminal) {
     this.tokenVerifying(socket);
@@ -54,10 +55,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket,
       shell: null,
       ptyTerm: null,
-      // skipFunc: {
-      //     skipSlashNs: null,
-      //     skipData: null
-      // }
     };
     this.connectBackEndTerm(socket, sessionId, session);
     socket.data.sessions.set(sessionId, session);
@@ -79,7 +76,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const session: TerminalSession = {
       socket,
       shell: {
-        write() {},
+        write(command: string) {
+          if (command === '\x03') {
+            this.end();
+            socket.emit('closed_terminal', { sessionId });
+            socket.data.sessions.delete(sessionId);
+            console.log(`terminal yopildi: ${sessionId}`);
+          }
+        },
         end() {
           conn.end();
           console.log(' hali end tayinlanmagan ');
@@ -87,9 +91,18 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
       ptyTerm: null,
     };
-    // this.sessions.set(sessionId, session);
+
     socket.data.sessions.set(sessionId, session);
     try {
+      await this.connectToServer(
+        config.serverCredentials,
+        {
+          socket,
+          conn,
+          sessionId,
+          session,
+        }
+      );
       await this.sshGatewayConn.deployProject(
         {
           localProjectPath: serverFilePath,
@@ -104,7 +117,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         installScript,
       );
 
-      //delete config.serverCredentials.readyTimeout =  20000;
+      //delete config.serverCredentials.readyTimeout
       await this.productRepository.addServerAndUpdateProduct(
         config.serverCredentials,
         config.productId,
@@ -112,38 +125,42 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       this.connectShell(socket, conn, sessionId); //, installScript);
     } catch (error: unknown) {
-      // if(error.message.includes())
       if (error instanceof Error) {
         socket.emit('error', { sessionId, message: error.message });
       } else {
         socket.emit('error', { sessionId, message: error });
       }
       console.log('gataway 122 error ', error);
-      return;
     }
   }
 
   @SubscribeMessage('ssh_connect')
   async handleConnect(socket: FrontendSocketTerminal, data: { productId: string }) {
-    console.log('serve Credential: ssh_connect');
     const server: ServerCredential = await this.productRepository.getServerCredentials(
       data.productId,
     );
     const sessionId = randomUUID();
     const conn = new Client();
-    console.log('server Credential: ', server);
-
-    conn.on('ready', () => {
-      this.connectShell(socket, conn, sessionId);
-      socket.emit('open_terminal', { sessionId });
-    });
-    conn.connect({
+    const connectDto = {
       host: server.host,
       port: server.port,
       username: server.username,
       password: server.password,
       privateKey: server.privateKey,
-    } as ConnectDto);
+    } as ConnectDto
+
+    try {
+      await this.connectToServer(connectDto, { socket, conn, sessionId });
+      this.connectShell(socket, conn, sessionId);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        socket.emit('error', { sessionId, message: error.message });
+      } else {
+        socket.emit('error', { sessionId, message: error });
+      }
+      console.log('gataway 158 error ', error);
+    }
+
   }
 
   @SubscribeMessage('command')
@@ -151,10 +168,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const session = socket.data.sessions.get(data.sessionId);
     if (session) {
       if (session.shell) {
-        // session.skipFunc.skipSlashNs?.(0);
-        // session.skipFunc.skipData?.(0);
         session.shell.write(data.command);
-        // session.shell.write(`${command} ; echo -e ${this.prompt}\n`);
       } else if (session.ptyTerm) {
         session.ptyTerm.write(data.command);
       } else {
@@ -173,7 +187,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       session.ptyTerm?.kill();
       socket.emit('closed_terminal', { sessionId: data.sessionId });
       socket.data.sessions.delete(data.sessionId);
-      // socket.disconnect();
       console.log(`terminal yopildi: ${data.sessionId}`);
     }
   }
@@ -193,7 +206,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     term.onData((data) => {
-      // console.log(data.toString());
       socket.emit('data', { sessionId, output: data.toString() });
     });
 
@@ -205,16 +217,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
 
     session.ptyTerm = term;
-
-    // this.sessions.set(sessionId, {
-    //     socket,
-    //     shell: null,
-    //     ptyTerm: term,
-    //     skipFunc: {
-    //         skipSlashNs: null,
-    //         skipData: null
-    //     }
-    // });//, clearLine: null });
   }
 
   private connectShell(
@@ -239,54 +241,17 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           //     stream.write(installScript + '\r\n');
           // }
 
-          // let skipSlashNsCount = 0;
-          // let skipDataCount = 0;
-
           const session: TerminalSession = {
             socket,
             shell: stream,
             ptyTerm: null,
-            // skipFunc: {
-            //     skipSlashNs: (value:number) => { skipSlashNsCount = value; },
-            //     skipData: (value: number) => { skipDataCount = value; }
-            // }
           };
 
-          // this.sessions.set(sessionId, session);
           socket.data.sessions.set(sessionId, session);
-
-          // function _skipData(sessionId: string, output: string) {
-          //     if (skipDataCount > 0) {
-          //         skipDataCount--;
-          //         return;
-          //     } else {
-          //         console.log(output);
-          //         socket.emit('data', { sessionId, output });
-          //     }
-          // }
 
           stream.on('data', (data: Buffer) => {
             const output = data.toString();
             socket.emit('data', { sessionId, output });
-            // if (skipSlashNsCount > 0) {
-            //     if (output.includes('\n')) {
-            //         const resposes = output.split('\n');
-            //         if (resposes.length > skipSlashNsCount) {
-            //             const respose = resposes.slice(skipSlashNsCount).join('\n');
-            //             skipSlashNsCount = 0;
-            //             _skipData(sessionId, respose);
-            //         } else {
-            //             skipSlashNsCount -= (resposes.length - 1);
-            //         }
-            //         // const lastIndex = output.lastIndexOf('\n');
-            //         // socket.emit('data', { sessionId, output: `${_line}${output.slice(0, lastIndex)}` });
-            //         // console.log(`${_line}${output.slice(0, lastIndex)}`);
-            //         // _line = output.slice(lastIndex + 1);
-            //     }
-            // } else {
-            //     _skipData(sessionId, output);
-            //     // socket.emit('data', { sessionId, output });
-            // }
           });
 
           stream.on('error', (err: Error) => {
@@ -294,7 +259,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           });
 
           stream.on('close', () => {
-            // this.sessions.delete(sessionId);
             session.shell = null;
             socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
             conn.end();
@@ -305,6 +269,51 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
       },
     );
+  }
+
+  private async connectToServer(
+    connectConfig: ConnectDto,
+    term: {
+      socket: FrontendSocketTerminal;
+      conn: Client;
+      sessionId: string;
+      session?: TerminalSession;
+    },
+  ): Promise<void> {
+    const { socket, conn, sessionId, session } = term;
+    return new Promise((resolve, reject) => {
+      if (session?.shell) {
+        session.shell.end = () => {
+          conn.end();
+          reject(new WsException("connection jarayonda to'xtatildi"));
+        };
+      }
+      conn.on('ready', () => {
+        socket.emit('open_terminal', { sessionId });
+        socket.emit('data', {
+          sessionId: term.sessionId,
+          output: `${connectConfig.host}:${connectConfig.port} serverga ulandi\r\n`,
+        });
+        resolve();
+      });
+
+      conn.on('timeout', () => {
+        console.error('⏳ SSH ulanish timeout bo‘ldi');
+        reject(new WsException('SSH timeout'));
+      });
+
+      conn.on('error', (err: Error) => {
+        console.log(`ssh connectionda xatolik err: ${err.message}`);
+        socket.emit('error', {
+          sessionId,
+          message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
+        });
+        this.handleSSHDisconnect(socket, { sessionId });
+        // reject(new WsException(`ssh connectionda xatolik err: ${err.message}`));
+      });
+
+      conn.connect(connectConfig);
+    });
   }
 
   private tokenVerifying(socket: FrontendSocketTerminal): boolean {
@@ -329,7 +338,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return true;
     } catch (err: unknown) {
       if (err instanceof Error) {
-        console.log('Token yaroqsiz! or err: ' + err.message);
+        console.log('Token yaroqsiz! or err.message: ' + err.message);
       } else {
         console.log(`token yaroqsiz? or err: ${err}`);
       }

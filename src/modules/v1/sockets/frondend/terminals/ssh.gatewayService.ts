@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  // InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
@@ -12,82 +9,6 @@ import { WsException } from '@nestjs/websockets';
 
 @Injectable()
 export class SshGatewayConnection {
-  private async connectToServer(
-    connectConfig: ConnectDto,
-    term: {
-      socket: FrontendSocketTerminal;
-      conn: Client;
-      sessionId: string;
-      session: TerminalSession;
-    },
-  ): Promise<void> {
-    const { socket, conn, sessionId, session } = term;
-
-    return new Promise((resolve, reject) => {
-      if (session.shell) {
-        session.shell.end = () => {
-          conn.end();
-          reject(new WsException("connection jarayonda to'xtatildi"));
-        };
-      }
-      conn.on('ready', () => {
-        // socket.emit('alert', {
-        //     message: `${connectConfig.host}:${connectConfig.port} serverga ulandi\n`,
-        // });
-        socket.emit('open_terminal', { sessionId });
-        resolve();
-      });
-
-      conn.on('timeout', () => {
-        console.error('⏳ SSH ulanish timeout bo‘ldi');
-        reject(new WsException('SSH timeout'));
-      });
-
-      conn.on('error', (err: Error) => {
-        console.log(`ssh connectionda xatolik err: ${err.message}`);
-        socket.emit('error', {
-          sessionId,
-          message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
-        });
-        // socket.disconnect();
-        // reject(
-        //   'stoped'
-        //   // new WsException(
-        //   //   `Server is not reachable. Please check the network connection. err: ${err.message}`,
-        //   // ),
-        // );
-      });
-
-      conn.connect(connectConfig);
-    });
-  }
-
-  // private async disconnectFromServer(conn: Client, socket: Socket): Promise<IMessage> {
-  //     return new Promise((resolve, reject) => {
-  //         conn.removeAllListeners('error');
-  //         conn.on('close', () => {
-  //             socket.emit('alert', { message: "Fayllar muvofaqiyatli o'tkzildi" });
-  //             resolve({
-  //                 status: 'success',
-  //                 message: 'Disconnected successfully.',
-  //             });
-  //         });
-  //         conn.on('error', (err: Error) => {
-  //             socket.emit('error', { message: `fayl o'tkazilib yopishda err: ${err.message}` });
-  //             // conn.end();
-  //             reject(
-  //                 new HttpException(
-  //                     {
-  //                         status: 'error',
-  //                         message: 'Error occurred while disconnecting: ' + err.message,
-  //                     },
-  //                     HttpStatus.INTERNAL_SERVER_ERROR,
-  //                 )
-  //             );
-  //         });
-  //         conn.end();
-  //     });
-  // }
 
   async deployProject(
     config: {
@@ -102,14 +23,8 @@ export class SshGatewayConnection {
     },
     installScript?: string,
   ): Promise<void> {
-    // const { socket, conn, sessionId, session } = term;
-    await this.connectToServer(config.serverCredentials, term);
-
     const osType = await this.findOsType(term);
-    // await this.uploadAndInstallNodeJS(conn, osType, socket, sessionId);
-    // // await this.uploadDirectory(sftp, config.localProjectPath, remoteProjectPath, sessionId);
-    await this.uploadProduct(config.localProjectPath, osType, term, installScript); // startCommand);
-    // await this.disconnectFromServer(conn, socket);
+    await this.uploadProduct(config.localProjectPath, osType, term, installScript);
     term.socket.emit('data', {
       sessionId: term.sessionId,
       output: 'terminaldan foydalnishing mumkin!\r\n',
@@ -139,10 +54,7 @@ export class SshGatewayConnection {
               sessionId,
               message: `Ulanilgan server OS turini aniqlashda xatolik yuzaga keldi err: ${err.message}`,
             });
-            // socket.disconnect();
-            // reject('unknown');
             reject(new WsException(`OS turini aniqlashda xatolik err: ${err.message}`));
-            // return;
           }
 
           if (session.shell) {
@@ -182,8 +94,6 @@ export class SshGatewayConnection {
                 sessionId,
                 message: `Server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message}\n`,
               });
-              // socket.disconnect();
-              // reject('unknown');
               reject(
                 new WsException(
                   `Ulanilgan server OS turini aniqlashda xatolik yuzaga keldi err: ${error.message} \n`,
@@ -216,7 +126,6 @@ export class SshGatewayConnection {
     const { socket, conn, sessionId, session } = term;
     return new Promise((resolve, reject) => {
       let remoteFile: string = '';
-      // let remoteProjectPath: string = '';
       if (session.shell) {
         session.shell.end = () => {
           conn.end();
@@ -227,11 +136,9 @@ export class SshGatewayConnection {
 
       if (osType === 'Windows') {
         remoteFile = 'C:\\Users\\Administrator\\Downloads\\' + path.basename(localProjectPath);
-        // remoteProjectPath = 'C:';
       } //if (osType === 'Linux')
       else {
         remoteFile = path.basename(localProjectPath);
-        // remoteProjectPath = `~`;
       }
 
       conn.sftp((err: Error, sftp: SFTPWrapper) => {
@@ -239,8 +146,6 @@ export class SshGatewayConnection {
           socket.emit('error', {
             message: `Product uploads SFTP ulanish xatosi err: ${err.message} \n`,
           });
-          // socket.disconnect();
-          // reject('Product uploads SFTP err');
           reject(new WsException(`Product uploads SFTP ulanish xatosi err: ${err.message}`));
         }
 
@@ -250,7 +155,11 @@ export class SshGatewayConnection {
               console.log('sesson.shell.end uploadProduct da chaqirildi');
               readStream.destroy();
               writeStream.destroy();
-              await this.deleteRemoteFile(sftp, remoteFile);
+              try {
+                await this.deleteRemoteFile(sftp, remoteFile);
+              } catch (err: unknown) {
+                console.log(`o'tkazilgan productni o'chirishda xatolik`, err);
+              }
               sftp.end();
               reject(new WsException(`Product uploads o'tish jarayonida to'xtatildi`));
             })();
@@ -286,11 +195,7 @@ export class SshGatewayConnection {
           filledLength = Math.round((+progress / 100) * barLength);
           progressBar = `[${'#'.repeat(filledLength)}${'-'.repeat(barLength - filledLength)}]`;
 
-          console.log(
-            `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`,
-          );
-          // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m` });
-
+          console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
           socket.emit('uploading', { sessionId, eventName: 'Product uploading', progress });
           socket.emit('data', {
             sessionId,
@@ -308,7 +213,6 @@ export class SshGatewayConnection {
           }
 
           console.log(`\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi\x1b[0m`);
-          // socket.emit('data', { sessionId, output: `\x1b[A\x1b[K\x1b[01;34m📦 Product serverga yuklandi.\x1b[0m` });
 
           socket.emit('uploading', {
             sessionId,
@@ -328,12 +232,10 @@ export class SshGatewayConnection {
                   sessionId,
                   message: `Productni arxivdan ochishda Error: ${err.message}\n`,
                 });
-                // socket.disconnect();
                 reject(
                   new WsException(
-                    'installing da xatolik?',
-                    // `Productni arxivdan ochishda xato yuzaga keldi err: ${err.message}`,
-                  ),
+                    `installing da xatolik err: ${err.message}`
+                  )
                 );
               }
               if (session.shell) {
@@ -342,7 +244,7 @@ export class SshGatewayConnection {
                     osType === 'windows'
                       ? `powershell -Command "Remove-Item -Path '${remoteFile}' -Force"`
                       : `sudo rm -f "${remoteFile}"`,
-                    (err: Error | undefined, stream: ClientChannel) => {
+                    (err: Error, stream: ClientChannel) => {
                       if (err) {
                         // resolve qilib jarayonni ushlab qolish kerakdir balki
                         reject(
@@ -350,7 +252,6 @@ export class SshGatewayConnection {
                             `installing jarayonini to'xtatishda xatolik: ${err.message}`,
                           ),
                         );
-                        return;
                       }
                       stream.on('data', (data: Buffer) => {
                         console.log('STDOUT:', data.toString());
@@ -361,7 +262,7 @@ export class SshGatewayConnection {
                 };
               }
               stream.on('data', (data: Buffer) => {
-                const formattedData = data.toString(); //.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                const formattedData = data.toString();
                 socket.emit('data', { sessionId, output: formattedData });
                 console.log('📌 Output (product arxivdan ochish):', data.toString());
               });
@@ -369,12 +270,12 @@ export class SshGatewayConnection {
                 const errorMsg = data.toString();
                 console.error('⚠️ Xato:', errorMsg);
 
-                // Agar jiddiy xatolik bo‘lsa, jarayonni to‘xtatamiz
                 if (
                   errorMsg.includes('command not found') ||
                   errorMsg.includes('Permission denied')
                 ) {
                   socket.emit('error', {
+                    sessionId,
                     message: `Product arxivdan ochish Error: ${err.message}\n`,
                   });
                   // socket.disconnect();
@@ -385,23 +286,19 @@ export class SshGatewayConnection {
                   );
                 } else {
                   socket.emit('alert', {
+                    sessionId,
                     message: `Product arxivdan ochishda warring: ${err.message}\n`,
                   });
                 }
               });
 
               stream.on('close', () => {
-                // console.log(`\x1b[A\x1b[KProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m`);
-                // socket.emit('data', { sessionId, output: `\x1b[2K\x1b[GProduct path: "${path.join(remoteProjectPath, 'product')}"\x1b[0m` });
                 resolve('success');
               });
             },
           );
-
-          // resolve('success');
         });
 
-        // ✅ Xatolik yuz bersa oqimni yopish
         writeStream?.on('error', (err: Error) => {
           console.error('Write stream xatosi:', err);
           writeStream.destroy();

@@ -8,7 +8,7 @@ import { CreateProductDto } from './dto/addProcuct.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private procuctRepository: ProductRepository) {}
+  constructor(private procuctRepository: ProductRepository) { }
 
   async findAll(): Promise<ProductList[]> {
     return this.procuctRepository.getAllProducts();
@@ -21,6 +21,7 @@ export class ProductsService {
   async deleteServerForProduct(id: string): Promise<ProductOne> {
     return this.procuctRepository.deleteServerForProduct(id);
   }
+  
   async deleteProduct(id: string): Promise<Message> {
     return this.procuctRepository.deleteProduct(id);
   }
@@ -41,7 +42,7 @@ export class ProductsService {
       throw new HttpException(
         {
           status: 'error',
-          message: '3 ta faylni ham jo‘nating!',
+          message: `3 ta faylni ham jo'nating!`,
         },
         HttpStatus.BAD_REQUEST,
       );
@@ -58,13 +59,10 @@ export class ProductsService {
     fs.renameSync(files.server[0].path, `${serverFolder}/${files.server[0].filename}`);
     fs.renameSync(files.agent[0].path, `${agentFolder}/${files.agent[0].filename}`);
 
-    // Fayl yo‘llari
     const iconPath = `/icons/${files.icon[0].filename}`;
     const serverFilePath = `./uploads/products/${body.name}/server/${body.serverVersion}/${files.server[0].filename}`;
     const agentFilePath = `./uploads/products/${body.name}/agent/${body.agentVersion}/${files.agent[0].filename}`;
 
-    // Fayl hajmlari
-    // const iconSize = fs.statSync(`.${iconPath}`).size;
     const serverFileSize = Math.floor(fs.statSync(`${serverFilePath}`).size / (1024 * 1024));
     const agentFileSize = Math.floor(fs.statSync(`${agentFilePath}`).size / (1024 * 1024));
 
@@ -84,18 +82,5 @@ export class ProductsService {
     };
 
     return this.procuctRepository.create(dataToSave);
-
-    // return {
-    //   message: 'Fayllar saqlandi!',
-    //   data: 'savedRecord',
-    // };
   }
-
-  // async update(id: string, productData: ProductData): Promise<IProduct> {
-  //   return this.procuctRepository.findByIdAndUpdate(id, productData);
-  // }
-
-  // async delete(id: string): Promise<IProduct> {
-  //   return this.procuctRepository.findByIdAndDelete(id);
-  // }
 }

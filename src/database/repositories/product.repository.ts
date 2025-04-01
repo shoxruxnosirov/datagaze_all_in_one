@@ -9,7 +9,7 @@ import {
 import { WsException } from '@nestjs/websockets';
 
 import { Knex } from 'knex';
-import { Message, Server, ProductOne, Product, ProductListsForGetAll } from 'src/comman/types';
+import { Message, Server, ProductOne, Product, ProductList } from 'src/comman/types';
 
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { CreateProductDto } from 'src/modules/v1/product/dto/addProcuct.dto';
@@ -19,7 +19,7 @@ import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
 export class ProductRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
-  async getAllProducts(): Promise<ProductListsForGetAll> {
+  async getAllProducts(): Promise<ProductList[]> {
     const result = await this.knex<Product>('products').select('*');
     return result.map((product) => ({
       id: product.id,

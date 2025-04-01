@@ -15,12 +15,8 @@ export type FrontendSocketTerminal = Omit<Socket, 'data'> & {
 
 export type TerminalSession = {
   socket: FrontendSocketTerminal;
-  shell: Channel | null | { write: () => void; end: () => void };
+  shell: Channel | null | { write: (command: string) => void; end: () => void };
   ptyTerm: pty.IPty | null;
-  // skipFunc: {
-  //     skipSlashNs: ((value: number) => void) | null
-  //     skipData: ((value: number) => void) | null
-  // };
 };
 
 export type MessageforLogin = {
@@ -62,7 +58,6 @@ export type Server = Knex.QueryBuilder & {
   username: string;
   password?: string;
   privateKey?: string;
-  // lastChecked: string;
 };
 
 export type Payload = {
@@ -91,7 +86,7 @@ export type GuardRequest = Request & {
 export type Product = {
   id: string;
   name: string;
-  icon?: string; // Nullable
+  icon: string; 
 
   serverVersion: string;
   agentVersion: string;
@@ -102,21 +97,21 @@ export type Product = {
   serverFileSize: number;
   agentFileSize: number;
 
-  serverId?: string | null; // Nullable (foreign key)
+  serverId?: string | null; 
 
   publisher: string;
 
-  description?: string; // Nullable
-  supportOS?: string; // Nullable
+  description?: string; 
+  supportOS?: string; 
 
   requiredCpuCore: number;
   requiredRam: number;
   requiredStorage: number;
   requiredNetwork: number;
 
-  installScript?: string; // Nullable
-  updateScript?: string; // Nullable
-  deleteScript?: string; // Nullable
+  installScript?: string;
+  updateScript?: string; 
+  deleteScript?: string; 
 
   computerCount: number;
   firstUploadAt: Date;
@@ -134,17 +129,7 @@ export type ListWithPagination<T> = {
   totalRecords: number;
 };
 
-export type ProductList = {
-  id: string;
-  name: string;
-  version: string;
-  icon: string;
-  installed: boolean;
-  publisher: string;
-  agentVersion: string;
-  serverFileSize: string;
-  agentFileSize: string;
-};
+
 
 export type ProductOne = {
   id: string;
@@ -208,8 +193,8 @@ export type Computer = {
   cpu: string;
   model: string;
   cores: number;
-  network_adapters: string; //NetworkAdapter[];
-  disks: string; //Disk[];
+  network_adapters: string; 
+  disks: string; 
 };
 
 export type ComputerForList = {
@@ -225,14 +210,15 @@ export type AgentSocket = Omit<Socket, 'data'> & {
   data: PayloadAgent;
 };
 
-export type ProductListsForGetAll = {
+export type ProductList = {
   id: string;
   name: string;
   version: string;
-  icon?: string;
+  icon: string;
   installed: boolean;
   publisher: string;
   agentVersion: string;
-  serverFileSize: number;
+  serverFileSize: number
   agentFileSize: number;
-}[];
+};
+

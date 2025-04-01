@@ -1,24 +1,14 @@
-// export class CreateProductDto {
-//   name: string;
-//   publisher: string;
-//   serverVersion: string;
-//   agentVersion: string;
-//   installScript: string;
-//   updateScript: string;
-//   deleteScript: string;
-// }
-
 export class CreateProductDto {
   name: string;
-  icon?: string;
+  icon: string;
   serverVersion: string;
   agentVersion: string;
-  serverFilePath?: string;
-  serverFileSize?: number;
-  agentFilePath?: string;
-  agentFileSize?: number;
+  serverFilePath: string;
+  serverFileSize: number;
+  agentFilePath: string;
+  agentFileSize: number;
   publisher: string;
-  installScript: string;
-  updateScript: string;
-  deleteScript: string;
+  installScript?: string;
+  updateScript?: string;
+  deleteScript?: string;
 }
