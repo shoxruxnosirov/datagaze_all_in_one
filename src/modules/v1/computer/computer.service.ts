@@ -26,7 +26,7 @@ export class ComputersService {
     return computers;
   }
 
-  async getComputerById(id: number): Promise<Computer> {
+  async getComputerById(id: string): Promise<Computer> {
     return this.computerRepository.getComputerById(id);
   }
 

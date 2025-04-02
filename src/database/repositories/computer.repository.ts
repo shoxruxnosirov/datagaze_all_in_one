@@ -65,7 +65,7 @@ export class ComputerRepository {
     };
   }
 
-  async getComputerById(id: number): Promise<Computer> {
+  async getComputerById(id: string): Promise<Computer> {
     const computer = await this.knex<Computer>('computers').where('id', id).first();
     if (!computer) {
       throw new HttpException('Computer not found', HttpStatus.NOT_FOUND);

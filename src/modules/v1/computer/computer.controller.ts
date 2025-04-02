@@ -51,7 +51,7 @@ export class ComputersController {
     description: 'Kompyuterning ID si',
   })
   getById(
-    @Param('computerId', new ParseUUIDPipe({ version: '4' })) computerId: number,
+    @Param('computerId', new ParseUUIDPipe({ version: '4' })) computerId: string,
   ): Promise<Computer> {
     return this.computersService.getComputerById(computerId);
   }
