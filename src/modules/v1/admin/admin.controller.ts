@@ -12,6 +12,8 @@ import {
   Put,
   Req,
   UseGuards,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 
 import { ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';
@@ -86,7 +88,7 @@ export class AdminController {
     return this.adminService.getOneAdmin(id);
   }
 
-  @Post('')
+  @Post()
   @UseGuards(RolesGuard)
   @Roles(Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create an admin by ID (Superadmin only)' })

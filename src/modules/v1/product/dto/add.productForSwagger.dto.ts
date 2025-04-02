@@ -4,7 +4,7 @@ export class CreateProductDtoForSwagger {
   @ApiProperty({
     type: 'string',
     format: 'binary',
-    description: 'Icon of Product',
+    description: 'Icon of the product',
     required: true,
   })
   icon: Express.Multer.File;
@@ -27,7 +27,7 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    description: 'Name of Product',
+    description: 'Product name',
     example: 'Datagaze DLP',
     required: true,
   })
@@ -35,7 +35,7 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    description: 'Server Version',
+    description: 'Server version',
     example: '2.2.2',
     required: true,
   })
@@ -43,7 +43,7 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    description: 'Agent Version',
+    description: 'Agent version',
     example: '2.3.1',
     required: true,
   })
@@ -59,7 +59,6 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    // format: 'textarea',
     description: 'Installation script',
     example: `ls -la .`,
     required: true,
@@ -68,7 +67,6 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    // format: 'textarea',
     description: 'Update script',
     example: 'pwd',
     required: true,
@@ -77,7 +75,6 @@ export class CreateProductDtoForSwagger {
 
   @ApiProperty({
     type: String,
-    // format: 'textarea',
     description: 'Delete script',
     example: 'rm app.exe',
     required: true,

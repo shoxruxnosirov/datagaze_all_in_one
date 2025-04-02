@@ -41,7 +41,7 @@ export class RolesGuard implements CanActivate {
         try {
           await this.adminRepository.getOneAdmin(decoded.id);
         } catch (err: unknown) {
-          if(err instanceof Error) {
+          if (err instanceof Error) {
             throw new ForbiddenException('You do not have permission to access this resource');
           } else {
             throw err;

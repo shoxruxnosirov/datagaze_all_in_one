@@ -6,7 +6,7 @@ import { SshConnection } from './ssh.connection';
 import { SshRepository } from 'src/database/repositories/server.repository';
 import { Server } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
-import { ConnectDto } from './dto/dtos';
+import { ConnectDto } from '../product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class SshService {

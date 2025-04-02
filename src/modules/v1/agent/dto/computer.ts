@@ -1,71 +1,101 @@
-import { IsString, IsInt, IsArray, IsEnum, ValidateNested } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  IsArray,
+  IsEnum,
+  ValidateNested,
+  IsOptional,
+  IsUUID,
+  IsNotEmpty,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class NetworkAdapterDto {
-  @IsString()
+  @IsString({ message: 'NIC name must be a string' })
+  @IsNotEmpty({ message: 'NIC name cannot be empty' })
   nic_name: string;
 
-  @IsString()
+  @IsString({ message: 'IP address must be a string' })
+  @IsNotEmpty({ message: 'IP address cannot be empty' })
   ip_address: string;
 
-  @IsString()
+  @IsString({ message: 'MAC address must be a string' })
+  @IsNotEmpty({ message: 'MAC address cannot be empty' })
   mac_address: string;
 
-  @IsEnum(['Up', 'Down'])
+  @IsEnum(['Up', 'Down'], { message: "Available status must be either 'Up' or 'Down'" })
+  @IsNotEmpty({ message: 'Available status cannot be empty' })
   available: 'Up' | 'Down';
 }
 
 class DiskDto {
-  @IsString()
+  @IsString({ message: 'Drive name must be a string' })
+  @IsNotEmpty({ message: 'Drive name cannot be empty' })
   drive_name: string;
 
-  @IsString()
+  @IsString({ message: 'Drive type must be a string' })
+  @IsNotEmpty({ message: 'Drive type cannot be empty' })
   drive_type: string;
 
-  @IsInt()
+  @IsInt({ message: 'Total size must be an integer' })
+  @IsNotEmpty({ message: 'Total size cannot be empty' })
   total_size: number;
 
-  @IsInt()
+  @IsInt({ message: 'Available space must be an integer' })
+  @IsNotEmpty({ message: 'Available space cannot be empty' })
   available_space: number;
 }
 
 export class CreateComputerDto {
+  @IsOptional()
+  @IsUUID('4', { message: 'Key must be a valid UUID' })
   key?: string;
 
-  @IsString()
+  @IsString({ message: 'Hostname must be a string' })
+  @IsNotEmpty({ message: 'Hostname cannot be empty' })
   hostname: string;
 
-  @IsString()
+  @IsString({ message: 'Operating system must be a string' })
+  @IsNotEmpty({ message: 'Operating system cannot be empty' })
   operation_system: string;
 
-  @IsString()
+  @IsString({ message: 'Platform must be a string' })
+  @IsNotEmpty({ message: 'Platform cannot be empty' })
   platform: string;
 
-  @IsString()
+  @IsString({ message: 'Build number must be a string' })
+  @IsNotEmpty({ message: 'Build number cannot be empty' })
   build_number: string;
 
-  @IsString()
+  @IsString({ message: 'Version must be a string' })
+  @IsNotEmpty({ message: 'Version cannot be empty' })
   version: string;
 
-  @IsInt()
+  @IsInt({ message: 'RAM must be an integer' })
+  @IsNotEmpty({ message: 'RAM cannot be empty' })
   ram: number;
 
-  @IsString()
+  @IsString({ message: 'CPU must be a string' })
+  @IsNotEmpty({ message: 'CPU cannot be empty' })
   cpu: string;
 
-  // @IsString()
+  @IsOptional()
+  @IsString({ message: 'Model must be a string' })
   model?: string;
 
-  @IsInt()
+  @IsInt({ message: 'Cores must be an integer' })
+  @IsNotEmpty({ message: 'Cores cannot be empty' })
   cores: number;
 
-  @IsArray()
+  @IsArray({ message: 'Network adapters must be an array' })
   @ValidateNested({ each: true })
   @Type(() => NetworkAdapterDto)
+  @IsNotEmpty({ message: 'Network adapters cannot be empty' })
   network_adapters: NetworkAdapterDto[];
 
-  @IsArray()
+  @IsArray({ message: 'Disks must be an array' })
   @ValidateNested({ each: true })
   @Type(() => DiskDto)
+  @IsNotEmpty({ message: 'Disks cannot be empty' })
   disks: DiskDto[];
 }

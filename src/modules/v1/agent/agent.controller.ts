@@ -8,6 +8,8 @@ import {
   Req,
   UseGuards,
   NotFoundException,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { AgentsService } from './agent.service';
 import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
@@ -48,7 +50,6 @@ export class AgentsController {
       new Map(
         applications.map((app) => {
           app.computerId = req.agent.computerId;
-          delete app.id;
           return [app.name, app];
         }),
       ).values(),

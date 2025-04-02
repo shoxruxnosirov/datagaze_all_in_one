@@ -13,7 +13,7 @@ import { Message, Server, ProductOne, Product, ProductList } from 'src/comman/ty
 
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
 import { CreateProductDto } from 'src/modules/v1/product/dto/addProcuct.dto';
-import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
+import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class ProductRepository {
@@ -57,7 +57,6 @@ export class ProductRepository {
           throw new BadRequestException(`Database error: ${error.message}`);
         }
       } else {
-        // console.log('get product for deploy err: ' + error);
         throw new BadRequestException(`Database error: ${error}`);
       }
     }

@@ -11,18 +11,20 @@ import {
   UploadedFiles,
   Res,
   UseInterceptors,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { ProductsService } from './product.service';
 import { Message, ProductList, ProductOne, Role } from 'src/comman/types';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
-import { ConnectDto } from '../ssh/dto/dtos';
 import { Response } from 'express';
 
 import { FileUploadInterceptor } from 'src/comman/interceptors/product-upload.interceptor';
 import { CreateProductDtoForSwagger } from './dto/add.productForSwagger.dto';
 import { CreateProductDto } from './dto/addProcuct.dto';
+import { ConnectDto } from './dto/update.serverConnect.dto';
 
 @Controller('api/products')
 export class ProductsController {

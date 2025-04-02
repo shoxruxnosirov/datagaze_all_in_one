@@ -5,8 +5,8 @@ import { Writable } from 'stream';
 import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
 import { Message } from 'src/comman/types';
-import { ConnectDto } from './dto/dtos';
 import { Response } from 'express';
+import { ConnectDto } from '../product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class SshConnection {
@@ -25,7 +25,6 @@ export class SshConnection {
       sshClient.on('error', (err: Error) => {
         res.write(`Serverda xatolik yuzaga keldi: ${err.message}\n`);
         res.end();
-        // this.sshClient.end();
         reject(
           new HttpException(
             {
@@ -309,24 +308,18 @@ export class SshConnection {
   ): Promise<string> {
     return new Promise((resolve, reject) => {
       let remoteFile: string = '';
-      // let remoteProjectPath: string = '';
 
       if (osType === 'Windows') {
         localProjectPath = path.join(localProjectPath, 'product.zip');
         remoteFile = 'C:\\Users\\Administrator\\Downloads\\product.zip';
-        // remoteProjectPath = 'C:';
       } //if (osType === 'Linux')
       else {
         localProjectPath = path.join(localProjectPath, 'product.tar.xz');
         remoteFile = `product.tar.xz`;
-        // remoteProjectPath = '/var/www';
       }
 
       console.log('remoteFile: ', remoteFile);
 
-      // console.log('remoteProjectPath: ', remoteProjectPath);
-
-      // Faylni serverga yuborish
       conn.sftp((err: Error, sftp: SFTPWrapper) => {
         if (err) {
           res.write(`Product ko'chirib o'tkazish uchun ulanishda xatolik\n`);

@@ -49,6 +49,11 @@
 
 <body>
     <!-- Deploy Form -->
+     <div>
+        <input type="text" id="token" placeholder="token">
+        <br>
+        <br>
+     </div>
     <div>
         <input type="text" id="productId" placeholder="Product ID" value="9f938f75-9f45-46a2-b249-6c830f3d32f7"><br>
         <input type="text" id="host" placeholder="Host" value="209.38.250.43"><br>
@@ -75,7 +80,7 @@
 
         const terminals = new Map();
 
-        const jwtToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImMzODM4OTNhLTExMjgtNGI4Zi04YjFhLTY1MGEzMzRjZTRiMCIsInJvbGUiOiJzdXBlcmFkbWluIiwiaWF0IjoxNzQzNDk1OTI1LCJleHAiOjE3NDM1MzkxMjV9.PPzuqDjp7mYSTSDPVs8wKbSz1bW3ifAqAUnjMta1SWc';
+        let jwtToken = '';
 
         document.addEventListener('keydown', function (event) {
             if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'c') {
@@ -88,7 +93,8 @@
 
         function initSocket() {
             if (!socket) {
-                socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
+                jwtToken = document.getElementById('token').value;
+                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
                     extraHeaders: {
                         transports: ['websocket'],
                         Authorization: `Bearer ${jwtToken}`,

@@ -1,14 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Message, ProductList, ProductOne } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
-import { ConnectDto } from '../ssh/dto/dtos';
 
 import * as fs from 'fs';
 import { CreateProductDto } from './dto/addProcuct.dto';
+import { ConnectDto } from './dto/update.serverConnect.dto';
 
 @Injectable()
 export class ProductsService {
-  constructor(private procuctRepository: ProductRepository) { }
+  constructor(private procuctRepository: ProductRepository) {}
 
   async findAll(): Promise<ProductList[]> {
     return this.procuctRepository.getAllProducts();
@@ -21,7 +21,7 @@ export class ProductsService {
   async deleteServerForProduct(id: string): Promise<ProductOne> {
     return this.procuctRepository.deleteServerForProduct(id);
   }
-  
+
   async deleteProduct(id: string): Promise<Message> {
     return this.procuctRepository.deleteProduct(id);
   }

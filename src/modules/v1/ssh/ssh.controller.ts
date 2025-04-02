@@ -1,13 +1,13 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Response } from 'express';
 
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 
-import { ConnectDto } from './dto/dtos';
 import { SshService } from './ssh.service';
 import { Role } from 'src/comman/types';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
 import { Roles } from 'src/comman/decorators/roles.decorator';
+import { ConnectDto } from '../product/dto/update.serverConnect.dto';
 
 @Controller('ssh')
 export class SshController {

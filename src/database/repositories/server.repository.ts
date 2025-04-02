@@ -2,25 +2,14 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 
 import { Knex } from 'knex';
 
-// import { ConnectConfig } from 'ssh2';
-
 import { Server } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
-import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
-// import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
+import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class SshRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
-  // async connect(serverCredential: ConnectDto) {
-  //     const result = await this.knex<IServer>('Servers')
-  //         .insert(serverCredential)
-  //         .returning('*');
-
-  //     return result;
-
-  // }
   async getSshStatus(serverId: string): Promise<Server> {
     const server: Server | undefined = await this.knex<Server>('servers')
       .where({ id: serverId })
@@ -35,13 +24,8 @@ export class SshRepository {
       );
     }
 
-    // await this.knex('servers').where({ id: server.id }).update({ lastChecked: Date.now() }).returning('*');
     return server;
   }
-
-  // async getSshFailureLogs(serverId: string) {
-  //   return await this.knex<IServer>('Servers').where({ serverId, type: 'error' }).select('*');
-  // }
 
   async storeSshCredentials(connectConfig: ConnectDto): Promise<Server> {
     const serverData = await this.knex<Server>('servers').insert(connectConfig).returning('*');
@@ -74,8 +58,4 @@ export class SshRepository {
       );
     }
   }
-
-  // async autoLogin(serverId: string) {
-  //   return await this.knex<IServer>('Servers').where({ serverId: serverId }).select('*');
-  // }
 }

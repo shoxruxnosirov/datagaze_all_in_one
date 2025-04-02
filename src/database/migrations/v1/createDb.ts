@@ -7,7 +7,6 @@ const db = Knex(knexConfig);
 
 (async function () {
   try {
-
     await db.schema.dropTableIfExists('admins');
 
     await db.schema.dropTableIfExists('products');

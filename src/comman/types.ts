@@ -86,7 +86,7 @@ export type GuardRequest = Request & {
 export type Product = {
   id: string;
   name: string;
-  icon: string; 
+  icon: string;
 
   serverVersion: string;
   agentVersion: string;
@@ -97,12 +97,12 @@ export type Product = {
   serverFileSize: number;
   agentFileSize: number;
 
-  serverId?: string | null; 
+  serverId?: string | null;
 
   publisher: string;
 
-  description?: string; 
-  supportOS?: string; 
+  description?: string;
+  supportOS?: string;
 
   requiredCpuCore: number;
   requiredRam: number;
@@ -110,8 +110,8 @@ export type Product = {
   requiredNetwork: number;
 
   installScript?: string;
-  updateScript?: string; 
-  deleteScript?: string; 
+  updateScript?: string;
+  deleteScript?: string;
 
   computerCount: number;
   firstUploadAt: Date;
@@ -128,8 +128,6 @@ export type ListWithPagination<T> = {
   totalPages: number;
   totalRecords: number;
 };
-
-
 
 export type ProductOne = {
   id: string;
@@ -193,8 +191,8 @@ export type Computer = {
   cpu: string;
   model: string;
   cores: number;
-  network_adapters: string; 
-  disks: string; 
+  network_adapters: string;
+  disks: string;
 };
 
 export type ComputerForList = {
@@ -218,7 +216,6 @@ export type ProductList = {
   installed: boolean;
   publisher: string;
   agentVersion: string;
-  serverFileSize: number
+  serverFileSize: number;
   agentFileSize: number;
 };
-

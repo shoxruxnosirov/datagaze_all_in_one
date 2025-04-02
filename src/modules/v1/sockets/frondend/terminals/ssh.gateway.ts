@@ -11,7 +11,6 @@ import { Client, Channel } from 'ssh2';
 import { randomUUID } from 'crypto';
 import * as pty from 'node-pty';
 import { SshGatewayConnection } from './ssh.gatewayService';
-import { ConnectDto } from '../../../ssh/dto/dtos';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 import {
   FrontendSocketTerminal,
@@ -22,6 +21,7 @@ import {
 } from 'src/comman/types';
 import { JwtService } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/config/env';
+import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
 
 @WebSocketGateway({ cors: true })
 export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -31,7 +31,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sshGatewayConn: SshGatewayConnection,
     private productRepository: ProductRepository,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   handleConnection(socket: FrontendSocketTerminal) {
     this.tokenVerifying(socket);
@@ -78,7 +78,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       shell: {
         write(command: string) {
           if (command === '\x03') {
-            this.end();
+            session.shell?.end();
             socket.emit('closed_terminal', { sessionId });
             socket.data.sessions.delete(sessionId);
             console.log(`terminal yopildi: ${sessionId}`);
@@ -94,15 +94,12 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     socket.data.sessions.set(sessionId, session);
     try {
-      await this.connectToServer(
-        config.serverCredentials,
-        {
-          socket,
-          conn,
-          sessionId,
-          session,
-        }
-      );
+      await this.connectToServer(config.serverCredentials, {
+        socket,
+        conn,
+        sessionId,
+        session,
+      });
       await this.sshGatewayConn.deployProject(
         {
           localProjectPath: serverFilePath,
@@ -147,7 +144,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       username: server.username,
       password: server.password,
       privateKey: server.privateKey,
-    } as ConnectDto
+    } as ConnectDto;
 
     try {
       await this.connectToServer(connectDto, { socket, conn, sessionId });
@@ -160,7 +157,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       console.log('gataway 158 error ', error);
     }
-
   }
 
   @SubscribeMessage('command')

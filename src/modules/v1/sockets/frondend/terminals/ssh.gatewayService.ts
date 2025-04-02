@@ -4,12 +4,11 @@ import * as path from 'path';
 import { Client, SFTPWrapper, ClientChannel } from 'ssh2';
 
 import { FrontendSocketTerminal, TerminalSession } from 'src/comman/types';
-import { ConnectDto } from '../../../ssh/dto/dtos';
 import { WsException } from '@nestjs/websockets';
+import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class SshGatewayConnection {
-
   async deployProject(
     config: {
       localProjectPath: string;
@@ -195,7 +194,9 @@ export class SshGatewayConnection {
           filledLength = Math.round((+progress / 100) * barLength);
           progressBar = `[${'#'.repeat(filledLength)}${'-'.repeat(barLength - filledLength)}]`;
 
-          console.log(`\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`);
+          console.log(
+            `\x1b[A\x1b[K\x1b[01;34mProduct uploading: ${progressBar} ${progress}%\x1b[0m`,
+          );
           socket.emit('uploading', { sessionId, eventName: 'Product uploading', progress });
           socket.emit('data', {
             sessionId,
@@ -232,11 +233,7 @@ export class SshGatewayConnection {
                   sessionId,
                   message: `Productni arxivdan ochishda Error: ${err.message}\n`,
                 });
-                reject(
-                  new WsException(
-                    `installing da xatolik err: ${err.message}`
-                  )
-                );
+                reject(new WsException(`installing da xatolik err: ${err.message}`));
               }
               if (session.shell) {
                 session.shell.end = () => {

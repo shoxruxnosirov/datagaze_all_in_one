@@ -5,14 +5,12 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './comman/filters/http-exception.filter';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors();
-
-  // app.use(express.json());
-  // app.use(express.urlencoded({ extended: true }));
 
   const config = new DocumentBuilder()
     .setTitle('API Documentation')
@@ -26,11 +24,13 @@ async function bootstrap(): Promise<void> {
   SwaggerModule.setup('api', app, document);
 
   app.useGlobalFilters(new HttpExceptionFilter());
+  
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const host = '0.0.0.0'; //
-  // const host =  'localhost';//
+  const host = '0.0.0.0';
 
   await app.listen(process.env.PORT ?? 3004, host);
 }
