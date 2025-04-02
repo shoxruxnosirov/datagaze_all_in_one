@@ -1,13 +1,13 @@
-import { IsString, IsNotEmpty, IsInt, IsPositive } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, IsPositive, IsOptional } from 'class-validator';
 
 export class CreateProductDto {
   @IsString({ message: 'Name must be a string' })
   @IsNotEmpty({ message: 'Name cannot be empty' })
   name: string;
 
+  @IsOptional()
   @IsString({ message: 'Icon must be a string' })
-  @IsNotEmpty({ message: 'Icon cannot be empty' })
-  icon: string;
+  icon?: string;
 
   @IsString({ message: 'Server version must be a string' })
   @IsNotEmpty({ message: 'Server version cannot be empty' })
@@ -17,21 +17,23 @@ export class CreateProductDto {
   @IsNotEmpty({ message: 'Agent version cannot be empty' })
   agentVersion: string;
 
+  @IsOptional()
   @IsString({ message: 'Server file path must be a string' })
-  @IsNotEmpty({ message: 'Server file path cannot be empty' })
-  serverFilePath: string;
+  serverFilePath?: string;
 
+  @IsOptional()
   @IsInt({ message: 'Server file size must be an integer' })
   @IsPositive({ message: 'Server file size must be a positive number' })
-  serverFileSize: number;
+  serverFileSize?: number;
 
+  @IsOptional()
   @IsString({ message: 'Agent file path must be a string' })
-  @IsNotEmpty({ message: 'Agent file path cannot be empty' })
-  agentFilePath: string;
+  agentFilePath?: string;
 
+  @IsOptional()
   @IsInt({ message: 'Agent file size must be an integer' })
   @IsPositive({ message: 'Agent file size must be a positive number' })
-  agentFileSize: number;
+  agentFileSize?: number;
 
   @IsString({ message: 'Publisher must be a string' })
   @IsNotEmpty({ message: 'Publisher cannot be empty' })

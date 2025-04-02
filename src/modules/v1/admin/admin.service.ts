@@ -13,7 +13,6 @@ import { Admin2, Message, MessageforLogin, Payload, Tokens } from 'src/comman/ty
 import { AdminRepository } from 'src/database/repositories/admin.repository';
 import { CreateAdminDto } from './dto/register';
 import { LoginAdminDto } from './dto/login';
-// import { request } from 'express';
 
 @Injectable()
 export class AdminService {
