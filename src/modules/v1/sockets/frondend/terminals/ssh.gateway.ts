@@ -315,6 +315,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private tokenVerifying(socket: FrontendSocketTerminal): boolean {
     const token = socket.handshake.headers['authorization']?.split(' ')[1];
+
+    console.log('terminal token: ', token);
     if (!token) {
       socket.disconnect();
       return false;

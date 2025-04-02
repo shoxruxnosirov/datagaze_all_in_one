@@ -28,9 +28,10 @@ export class AgentsController {
     @Body() computerData: CreateComputerDto,
     @Res() res: Response,
   ): Promise<Response> {
+    console.log("computerData:", computerData);
     const { token, status } = await this.agentsService.createOrUpdate(computerData);
     console.log('agent: ', computerData.hostname, '\nstatus: ', status);
-    console.log('agent token: ', token);
+    console.log('register-agent token: ', token);
     return res.status(status === 'registered' ? 201 : 200).json({ token, status });
   }
 
@@ -61,7 +62,7 @@ export class AgentsController {
   @Get('application/download/:appName')
   @UseGuards(AgentGuard)
   @ApiBearerAuth()
-  @ApiParam({ name: 'appName', required: true, example: 'putty' })
+  @ApiParam({ name: 'appName', required: true, example: 'putty.exe' })
   downloadFile(@Param('appName') filename: string, @Res() res: Response) {
     const filePath = join(process.cwd(), 'uploads', 'apps', filename);
 

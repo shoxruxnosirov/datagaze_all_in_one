@@ -33,17 +33,13 @@ class DiskDto {
   @IsNotEmpty({ message: 'Drive name cannot be empty' })
   drive_name: string;
 
-  @IsString({ message: 'Drive type must be a string' })
-  @IsNotEmpty({ message: 'Drive type cannot be empty' })
-  drive_type: string;
-
   @IsInt({ message: 'Total size must be an integer' })
   @IsNotEmpty({ message: 'Total size cannot be empty' })
   total_size: number;
 
   @IsInt({ message: 'Available space must be an integer' })
   @IsNotEmpty({ message: 'Available space cannot be empty' })
-  available_space: number;
+  free_size: number;
 }
 
 export class CreateComputerDto {

@@ -75,6 +75,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private tokenVerifying(socket: AgentSocket): boolean {
     const token = socket.handshake.headers['authorization']?.split(' ')[1];
+    console.log('agent token: ', token);
     if (!token) {
       socket.disconnect();
       return false;
