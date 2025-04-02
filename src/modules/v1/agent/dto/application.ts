@@ -9,19 +9,19 @@ export class ApplicationDto {
   @IsNotEmpty({ message: 'Name cannot be empty' })
   name: string;
 
+  @IsOptional()
   @IsString({ message: 'Version must be a string' })
-  @IsNotEmpty({ message: 'Version cannot be empty' })
-  version: string;
+  version?: string;
 
+  @IsOptional()
   @IsDate({ message: 'Installed date must be a valid date' })
-  @IsNotEmpty({ message: 'Installed date cannot be empty' })
-  installed_date: Date;
+  installed_date?: Date;
 
+  @IsOptional()
   @IsString({ message: 'Type must be a string' })
-  @IsNotEmpty({ message: 'Type cannot be empty' })
-  type: string;
+  type?: string;
 
+  @IsOptional()
   @IsInt({ message: 'Size must be an integer' })
-  @IsNotEmpty({ message: 'Size cannot be empty' })
-  size: number;
+  size?: number;
 }
