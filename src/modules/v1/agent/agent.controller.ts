@@ -8,8 +8,6 @@ import {
   Req,
   UseGuards,
   NotFoundException,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { AgentsService } from './agent.service';
 import { ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';

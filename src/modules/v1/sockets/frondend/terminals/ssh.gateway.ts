@@ -295,6 +295,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       conn.on('timeout', () => {
         console.error('⏳ SSH ulanish timeout bo‘ldi');
+        this.handleSSHDisconnect(socket, { sessionId });
         reject(new WsException('SSH timeout'));
       });
 
@@ -305,7 +306,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
         });
         this.handleSSHDisconnect(socket, { sessionId });
-        // reject(new WsException(`ssh connectionda xatolik err: ${err.message}`));
+        reject(new WsException(`ssh connectionda xatolik err: ${err.message}`));
       });
 
       conn.connect(connectConfig);

@@ -1,7 +1,6 @@
 import { IsInt, IsString, IsDate, IsOptional, IsUUID, IsNotEmpty } from 'class-validator';
 
 export class ApplicationDto {
-
   @IsOptional()
   @IsUUID('4', { message: 'Computer ID must be a valid UUID' })
   computerId?: string;

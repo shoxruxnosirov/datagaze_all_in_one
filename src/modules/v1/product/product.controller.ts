@@ -11,8 +11,6 @@ import {
   UploadedFiles,
   Res,
   UseInterceptors,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 import { ProductsService } from './product.service';
 import { Message, ProductList, ProductOne, Role } from 'src/comman/types';

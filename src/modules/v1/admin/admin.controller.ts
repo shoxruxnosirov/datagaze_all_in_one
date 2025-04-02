@@ -12,8 +12,6 @@ import {
   Put,
   Req,
   UseGuards,
-  UsePipes,
-  ValidationPipe,
 } from '@nestjs/common';
 
 import { ApiOperation, ApiBearerAuth, ApiBody, ApiParam } from '@nestjs/swagger';

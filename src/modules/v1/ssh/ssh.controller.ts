@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { Response } from 'express';
 
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';

@@ -8,7 +8,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ComputersService } from './computer.service';
-// import { Computer } from "./entities/computer.model";
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Application, Computer, ComputerForList, ListWithPagination, Role } from 'src/comman/types';
 import { Roles } from 'src/comman/decorators/roles.decorator';
