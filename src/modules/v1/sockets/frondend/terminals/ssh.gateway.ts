@@ -22,7 +22,6 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/config/env';
 import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
-import { isNullOrUndefined } from 'util';
 
 @WebSocketGateway({ cors: true })
 export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -68,12 +67,8 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     config: { productId: string; serverCredentials: ConnectDto },
   ) {
-    const { serverFilePath, installScript } = await this.productRepository.getProductForDeploy(
-      config.productId,
-    );
 
     const sessionId = randomUUID();
-    const conn: Client = new Client();
     const session: TerminalSession = {
       socket,
       shell: {
@@ -88,11 +83,19 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         // },
       },
       ptyTerm: null,
-      conn,
+      conn: null,
     };
 
     socket.data.sessions.set(sessionId, session);
+
     try {
+      const { serverFilePath, installScript } = await this.productRepository.getProductForDeploy(
+        config.productId,
+      );
+
+      const conn: Client = new Client();
+      session.conn = conn;
+
       await this.connectToServer(config.serverCredentials, {
         socket,
         conn,
@@ -127,22 +130,22 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
       console.log('gataway 122 error ', error);
 
-      this.handleSSHDisconnect(socket, {sessionId});
+      this.handleSSHDisconnect(socket, { sessionId });
     }
   }
 
   @SubscribeMessage('ssh_connect')
   async handleConnect(socket: FrontendSocketTerminal, data: { productId: string }) {
     const sessionId = randomUUID();
-    const session: TerminalSession = {
-      socket,
-      shell: null,
-      ptyTerm: null,
-      conn: null
-    }
-    socket.data.sessions.set(sessionId, session);
     
     try {
+      const session: TerminalSession = {
+        socket,
+        shell: null,
+        ptyTerm: null,
+        conn: null
+      }
+      socket.data.sessions.set(sessionId, session);
       const server: ServerCredential = await this.productRepository.getServerCredentials(
         data.productId,
       );
@@ -158,7 +161,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket.emit('error', { sessionId, message: error });
       }
       console.log('gataway 158 error ', error);
-      this.handleSSHDisconnect(socket, {sessionId});
+      this.handleSSHDisconnect(socket, { sessionId });
     }
   }
 
@@ -241,7 +244,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (err: Error, stream: Channel) => {
         if (err) {
           conn.end();
-          
+
           socket.emit('error', { sessionId, message: err.message });
         } else {
           // if(installScript) {

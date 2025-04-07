@@ -94,7 +94,7 @@
         function initSocket() {
             if (!socket) {
                 jwtToken = document.getElementById('token').value;
-                socket = io('ws://localhost:3004', { // 3.145.147.3 192.168.1.103,
+                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
                     extraHeaders: {
                         transports: ['websocket'],
                         Authorization: `Bearer ${jwtToken}`,
