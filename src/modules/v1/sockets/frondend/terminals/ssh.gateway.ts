@@ -31,7 +31,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sshGatewayConn: SshGatewayConnection,
     private productRepository: ProductRepository,
     private jwtService: JwtService,
-  ) { }
+  ) {}
 
   handleConnection(socket: FrontendSocketTerminal) {
     this.tokenVerifying(socket);
@@ -55,7 +55,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       socket,
       shell: null,
       ptyTerm: null,
-      conn: null
+      conn: null,
     };
     this.connectBackEndTerm(socket, sessionId, session);
     socket.data.sessions.set(sessionId, session);
@@ -67,7 +67,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     config: { productId: string; serverCredentials: ConnectDto },
   ) {
-
     const sessionId = randomUUID();
     const session: TerminalSession = {
       socket,
@@ -137,14 +136,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('ssh_connect')
   async handleConnect(socket: FrontendSocketTerminal, data: { productId: string }) {
     const sessionId = randomUUID();
-    
+
     try {
       const session: TerminalSession = {
         socket,
         shell: null,
         ptyTerm: null,
-        conn: null
-      }
+        conn: null,
+      };
       socket.data.sessions.set(sessionId, session);
       const server: ServerCredential = await this.productRepository.getServerCredentials(
         data.productId,
@@ -232,7 +231,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     conn: Client,
     sessionId: string,
-    session: TerminalSession
+    session: TerminalSession,
     // installScript?: string,
   ) {
     conn.shell(
@@ -290,7 +289,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     const { socket, conn, sessionId, session } = term;
     return new Promise((resolve, reject) => {
-
       if (session?.shell) {
         session.shell.end = () => {
           // conn.end();
@@ -311,7 +309,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
         });
         reject(new WsException(`ssh connectionda xatolik err: ${err.message}`));
-      }
+      };
 
       conn.on('timeout', rejectConnectForTimeout);
 
@@ -355,7 +353,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         readyTimeout: 10000,
         keepaliveInterval: 5000,
         keepaliveCountMax: 3,
-      })
+      });
     });
   }
 

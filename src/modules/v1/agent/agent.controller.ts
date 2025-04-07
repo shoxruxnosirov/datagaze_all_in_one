@@ -28,7 +28,7 @@ export class AgentsController {
     @Body() computerData: CreateComputerDto,
     @Res() res: Response,
   ): Promise<Response> {
-    console.log("computerData:", computerData);
+    console.log('computerData:', computerData);
     const { token, status } = await this.agentsService.createOrUpdate(computerData);
     console.log('agent: ', computerData.hostname, '\nstatus: ', status);
     console.log('register-agent token: ', token);
