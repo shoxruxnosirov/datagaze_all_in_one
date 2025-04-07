@@ -1,8 +1,11 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import * as fs from 'fs';
+
+import { Express } from 'express';
+
 import { Message, ProductList, ProductOne } from 'src/comman/types';
 import { ProductRepository } from 'src/database/repositories/product.repository';
 
-import * as fs from 'fs';
 import { CreateProductDto } from './dto/addProcuct.dto';
 import { ConnectDto } from './dto/update.serverConnect.dto';
 

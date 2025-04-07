@@ -17,7 +17,7 @@ import { Message, ProductList, ProductOne, Role } from 'src/comman/types';
 import { Roles } from 'src/comman/decorators/roles.decorator';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { RolesGuard } from 'src/comman/guards/roles.guard';
-import { Response } from 'express';
+import { Response, Express } from 'express';
 
 import { FileUploadInterceptor } from 'src/comman/interceptors/product-upload.interceptor';
 import { CreateProductDtoForSwagger } from './dto/add.productForSwagger.dto';
