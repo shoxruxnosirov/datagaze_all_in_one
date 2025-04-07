@@ -1,7 +1,7 @@
 import Knex from 'knex';
 import { Socket } from 'socket.io';
 
-import { Channel } from 'ssh2';
+import { Channel, Client } from 'ssh2';
 import * as pty from 'node-pty';
 
 export type Tokens = {
@@ -15,8 +15,9 @@ export type FrontendSocketTerminal = Omit<Socket, 'data'> & {
 
 export type TerminalSession = {
   socket: FrontendSocketTerminal;
-  shell: Channel | null | { write: (command: string) => void; end: () => void };
+  shell: Channel | null | { write: (command: string) => void; end?: () => void };
   ptyTerm: pty.IPty | null;
+  conn: Client | null;
 };
 
 export type MessageforLogin = {

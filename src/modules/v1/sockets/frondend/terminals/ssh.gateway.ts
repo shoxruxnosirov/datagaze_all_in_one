@@ -22,6 +22,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { JWT_SECRET } from 'src/config/env';
 import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
+import { isNullOrUndefined } from 'util';
 
 @WebSocketGateway({ cors: true })
 export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -31,7 +32,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sshGatewayConn: SshGatewayConnection,
     private productRepository: ProductRepository,
     private jwtService: JwtService,
-  ) {}
+  ) { }
 
   handleConnection(socket: FrontendSocketTerminal) {
     this.tokenVerifying(socket);
@@ -42,7 +43,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`SocketClient uzildi: ${socket.id}`);
 
     for (const session of socket.data.sessions.values()) {
-      session.shell?.end();
+      session.shell?.end?.();
       session.ptyTerm?.kill();
     }
     socket.data.sessions.clear();
@@ -51,10 +52,11 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('open_own_terminal')
   openTerminal(socket: FrontendSocketTerminal) {
     const sessionId = randomUUID();
-    const session = {
+    const session: TerminalSession = {
       socket,
       shell: null,
       ptyTerm: null,
+      conn: null
     };
     this.connectBackEndTerm(socket, sessionId, session);
     socket.data.sessions.set(sessionId, session);
@@ -66,7 +68,6 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     config: { productId: string; serverCredentials: ConnectDto },
   ) {
-    // config.serverCredentials.readyTimeout =  20000;
     const { serverFilePath, installScript } = await this.productRepository.getProductForDeploy(
       config.productId,
     );
@@ -78,18 +79,16 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       shell: {
         write(command: string) {
           if (command === '\x03') {
-            session.shell?.end();
-            socket.emit('closed_terminal', { sessionId });
-            socket.data.sessions.delete(sessionId);
-            console.log(`terminal yopildi: ${sessionId}`);
+            this.handleSSHDisconnect(socket, { sessionId });
           }
         },
-        end() {
-          conn.end();
-          console.log(' hali end tayinlanmagan ');
-        },
+        // end() {
+        //   conn.end();
+        //   console.log(' aynan bu buyruq hech ham chaqirmaydi ');
+        // },
       },
       ptyTerm: null,
+      conn,
     };
 
     socket.data.sessions.set(sessionId, session);
@@ -114,13 +113,12 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         installScript,
       );
 
-      //delete config.serverCredentials.readyTimeout
       await this.productRepository.addServerAndUpdateProduct(
         config.serverCredentials,
         config.productId,
       );
 
-      this.connectShell(socket, conn, sessionId); //, installScript);
+      this.connectShell(socket, conn, sessionId, session); //, installScript);
     } catch (error: unknown) {
       if (error instanceof Error) {
         socket.emit('error', { sessionId, message: error.message });
@@ -128,27 +126,31 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket.emit('error', { sessionId, message: error });
       }
       console.log('gataway 122 error ', error);
+
+      this.handleSSHDisconnect(socket, {sessionId});
     }
   }
 
   @SubscribeMessage('ssh_connect')
   async handleConnect(socket: FrontendSocketTerminal, data: { productId: string }) {
-    const server: ServerCredential = await this.productRepository.getServerCredentials(
-      data.productId,
-    );
     const sessionId = randomUUID();
-    const conn = new Client();
-    const connectDto = {
-      host: server.host,
-      port: server.port,
-      username: server.username,
-      password: server.password,
-      privateKey: server.privateKey,
-    } as ConnectDto;
-
+    const session: TerminalSession = {
+      socket,
+      shell: null,
+      ptyTerm: null,
+      conn: null
+    }
+    socket.data.sessions.set(sessionId, session);
+    
     try {
-      await this.connectToServer(connectDto, { socket, conn, sessionId });
-      this.connectShell(socket, conn, sessionId);
+      const server: ServerCredential = await this.productRepository.getServerCredentials(
+        data.productId,
+      );
+      delete server.id;
+      const conn = new Client();
+      session.conn = conn;
+      await this.connectToServer(server, { socket, conn, sessionId, session });
+      this.connectShell(socket, conn, sessionId, session);
     } catch (error: unknown) {
       if (error instanceof Error) {
         socket.emit('error', { sessionId, message: error.message });
@@ -156,6 +158,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
         socket.emit('error', { sessionId, message: error });
       }
       console.log('gataway 158 error ', error);
+      this.handleSSHDisconnect(socket, {sessionId});
     }
   }
 
@@ -179,7 +182,14 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   handleSSHDisconnect(socket: FrontendSocketTerminal, data: { sessionId: string }) {
     const session: TerminalSession | undefined = socket.data.sessions.get(data.sessionId);
     if (session) {
-      session.shell?.end();
+      // session.shell?.end?.();
+      const shell = session.shell;
+      if (shell) {
+        shell.end?.();
+        session.conn?.end();
+        session.conn = null;
+        console.log('shell ulanish yopildi');
+      }
       session.ptyTerm?.kill();
       socket.emit('closed_terminal', { sessionId: data.sessionId });
       socket.data.sessions.delete(data.sessionId);
@@ -219,6 +229,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
     socket: FrontendSocketTerminal,
     conn: Client,
     sessionId: string,
+    session: TerminalSession
     // installScript?: string,
   ) {
     conn.shell(
@@ -230,6 +241,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
       (err: Error, stream: Channel) => {
         if (err) {
           conn.end();
+          
           socket.emit('error', { sessionId, message: err.message });
         } else {
           // if(installScript) {
@@ -237,11 +249,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
           //     stream.write(installScript + '\r\n');
           // }
 
-          const session: TerminalSession = {
-            socket,
-            shell: stream,
-            ptyTerm: null,
-          };
+          session.shell = stream;
 
           socket.data.sessions.set(sessionId, session);
 
@@ -258,6 +266,7 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
             session.shell = null;
             socket.emit('alert', { sessionId, message: 'ssh Terminal yopildi' });
             conn.end();
+            session.conn = null;
             this.connectBackEndTerm(socket, sessionId, session);
           });
 
@@ -278,38 +287,72 @@ export class SshGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     const { socket, conn, sessionId, session } = term;
     return new Promise((resolve, reject) => {
+
       if (session?.shell) {
         session.shell.end = () => {
-          conn.end();
+          // conn.end();
+          // session.conn = null;
           reject(new WsException("connection jarayonda to'xtatildi"));
         };
       }
-      conn.on('ready', () => {
-        socket.emit('open_terminal', { sessionId });
-        socket.emit('data', {
-          sessionId: term.sessionId,
-          output: `${connectConfig.host}:${connectConfig.port} serverga ulandi\r\n`,
-        });
-        resolve();
-      });
 
-      conn.on('timeout', () => {
+      const rejectConnectForTimeout = () => {
         console.error('⏳ SSH ulanish timeout bo‘ldi');
-        this.handleSSHDisconnect(socket, { sessionId });
         reject(new WsException('SSH timeout'));
-      });
+      };
 
-      conn.on('error', (err: Error) => {
+      const rejectConnectForError = (err: Error) => {
         console.log(`ssh connectionda xatolik err: ${err.message}`);
         socket.emit('error', {
           sessionId,
           message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
         });
-        this.handleSSHDisconnect(socket, { sessionId });
         reject(new WsException(`ssh connectionda xatolik err: ${err.message}`));
+      }
+
+      conn.on('timeout', rejectConnectForTimeout);
+
+      conn.on('error', rejectConnectForError);
+
+      conn.on('ready', () => {
+        socket.emit('open_terminal', { sessionId });
+        socket.emit('data', {
+          sessionId: term.sessionId,
+          output: `${connectConfig.username}:${connectConfig.host} serverga ulandi\r\n`,
+        });
+
+        conn.off('timeout', rejectConnectForTimeout);
+        conn.off('error', rejectConnectForTimeout);
+
+        conn.on('timeout', () => {
+          console.error('⏳ SSH ulanish timeout bo‘ldi');
+          this.handleSSHDisconnect(socket, { sessionId });
+        });
+
+        conn.on('error', (err: Error) => {
+          console.log(`ssh connectionda xatolik err: ${err.message}`);
+          socket.emit('error', {
+            sessionId,
+            message: `Serverda xatolik yuzaga keldi: ${err.message}\n`,
+          });
+          this.handleSSHDisconnect(socket, { sessionId });
+        });
+
+        resolve();
       });
 
-      conn.connect(connectConfig);
+      conn.on('close', () => {
+        console.log(`SSH sessiya yopildi: ${sessionId}`);
+        // socket.emit('closed_terminal', { sessionId });
+        // this.handleSSHDisconnect(socket, { sessionId });
+      });
+
+      conn.connect({
+        ...connectConfig,
+        readyTimeout: 10000,
+        keepaliveInterval: 5000,
+        keepaliveCountMax: 3,
+      })
     });
   }
 
