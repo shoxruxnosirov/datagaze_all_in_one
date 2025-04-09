@@ -28,15 +28,12 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      // forbidNonWhitelisted: true,
       transform: true,
     }),
   );
 
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const host = '0.0.0.0';
-
-  await app.listen(process.env.PORT ?? 3004, host);
+  await app.listen(process.env.PORT ?? 3004, process.env.HOST ?? '0.0.0.0');
 }
 void bootstrap();
