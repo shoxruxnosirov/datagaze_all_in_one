@@ -89,7 +89,7 @@ export class AgentsController {
   getUpdateJson(@Res() res: Response) {
     console.log('json olish uchun request keldi');
     // const filePath = join(, 'update_agent_info.json');
-    const filePath = join(process.cwd(), 'uploads', 'agent','1.0.0', 'update_agent_info.json');
+    const filePath = join(process.cwd(), 'uploads', 'agent', '1.0.0', 'update_agent_info.json');
     if (!existsSync(filePath)) {
       throw new NotFoundException('Fayl topilmadi');
     }
