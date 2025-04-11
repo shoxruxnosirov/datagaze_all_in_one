@@ -89,8 +89,9 @@ export class AgentsController {
   @ApiBearerAuth()
   getUpdateJson(@Res() res: Response) {
     console.log('json olish uchun request keldi');
-    // const filePath = join(, 'update_agent_info.json');
+    
     const filePath = join(process.cwd(), 'uploads', 'agent', '1.0.0', 'update_agent_info.json');
+    
     if (!existsSync(filePath)) {
       throw new NotFoundException('Fayl topilmadi');
     }
@@ -102,9 +103,7 @@ export class AgentsController {
   @UseGuards(AgentUpdateGuard)
   @ApiBearerAuth()
   getZipFile(@Param('fileName') fileName: string, @Res() res: Response) {
-    // if (!fileName.endsWith('.zip')) {
-    //   throw new NotFoundException('Faqat .zip fayllar ruxsat etiladi');
-    // }
+
     const filePath = join(process.cwd(), 'uploads', 'agent','1.0.0', fileName);
 
     if (!existsSync(filePath)) {
@@ -113,6 +112,6 @@ export class AgentsController {
 
     console.log('zip file yuborildi');
 
-    res.sendFile(filePath); // Faylni yuklash uchun
+    res.sendFile(filePath); 
   }
 }
