@@ -70,6 +70,7 @@ export type PayloadAgent = {
   computerId: string;
   key: string;
 };
+
 export type RequestAgent = Request & {
   agent: PayloadAgent;
   headers: CustomHeaders;
@@ -77,6 +78,10 @@ export type RequestAgent = Request & {
 
 type CustomHeaders = Headers & {
   authorization?: string;
+};
+
+export type RequestUpdateAgent = Request & {
+  headers: CustomHeaders;
 };
 
 export type GuardRequest = Request & {

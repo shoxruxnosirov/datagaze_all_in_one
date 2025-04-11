@@ -18,6 +18,7 @@ import { createReadStream, statSync, existsSync } from 'fs';
 import { ApplicationDto } from './dto/application';
 import { RequestAgent } from 'src/comman/types';
 import { AgentGuard } from 'src/comman/guards/agent.guard';
+import { AgentUpdateGuard } from 'src/comman/guards/agent.update.guard';
 
 @Controller('agent')
 export class AgentsController {
@@ -84,8 +85,8 @@ export class AgentsController {
   }
 
   @Get('update_agent_info.json')
-  // @UseGuards(AgentGuard)
-  // @ApiBearerAuth()
+  @UseGuards(AgentUpdateGuard)
+  @ApiBearerAuth()
   getUpdateJson(@Res() res: Response) {
     console.log('json olish uchun request keldi');
     // const filePath = join(, 'update_agent_info.json');
@@ -98,8 +99,8 @@ export class AgentsController {
   }
 
   @Get('update/:fileName')
-  // @UseGuards(AgentGuard)
-  // @ApiBearerAuth()
+  @UseGuards(AgentUpdateGuard)
+  @ApiBearerAuth()
   getZipFile(@Param('fileName') fileName: string, @Res() res: Response) {
     // if (!fileName.endsWith('.zip')) {
     //   throw new NotFoundException('Faqat .zip fayllar ruxsat etiladi');

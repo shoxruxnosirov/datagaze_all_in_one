@@ -7,4 +7,4 @@ export const REFRESH_TOKEN_EXPIRATION = '1d';
 export const AGENT_TOKEN_SECRET = 'maxfiy3';
 export const AGENT_TOKEN_EXPIRATION = '30d';
 
-export const AGENT_UPDATE_SECRET_KEY = '';
+export const AGENT_UPDATE_SECRET_KEY = 'Assalomu alaykum. DGZ server updateni tekshirishga keldim!!!';

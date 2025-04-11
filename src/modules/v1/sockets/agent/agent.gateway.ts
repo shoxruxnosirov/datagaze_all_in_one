@@ -32,6 +32,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(socket: AgentSocket) {
     console.log(`Agent computer uzuldi computerId: ${socket.data.computerId}`);
+    this.computerIdAndSocket.delete(socket.data.computerId);
     this.frondendSocket.activeOrInactiveAgnet('inactive_agent', socket.data.computerId);
   }
 
