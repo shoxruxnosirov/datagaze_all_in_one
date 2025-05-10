@@ -1,0 +1,14 @@
+import { Module } from '@nestjs/common';
+import { ProductsController } from './product.controller';
+import { ProductsService } from './product.service';
+import { ProductRepository } from 'src/database/repositories/product.repository';
+import { JwtService } from '@nestjs/jwt';
+import { AdminModule } from '../admin/admin.module';
+
+@Module({
+  imports: [AdminModule],
+  controllers: [ProductsController],
+  providers: [ProductsService, ProductRepository, JwtService],
+  exports: [JwtService, ProductRepository],
+})
+export class ProductsModule {}

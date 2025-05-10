@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Frontend</title>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm/lib/xterm.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl/lib/xterm-addon-webgl.min.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/xterm-addon-webgl/lib/xterm-addon-webgl.js"></script> -->
+
+    <style>
+        .terminal-wrapper {
+            border: 1px solid #444;
+            margin-bottom: 10px;
+            background: #222;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .terminal-title {
+            background: #333;
+            color: white;
+            padding: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .terminal-title button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .terminal {
+            height: 300px;
+            width: 100%;
+            background: black;
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- Deploy Form -->
+     <div>
+        <input type="text" id="token" placeholder="token">
+        <br>
+        <br>
+     </div>
+    <div>
+        <input type="text" id="productId" placeholder="Product ID" value="293781b6-f96b-4449-871f-97311feae8a6"><br>
+        <input type="text" id="host" placeholder="Host" value="213.230.109.74"><br>
+        <input type="text" id="port" placeholder="Port" value="2222"><br>
+        <input type="text" id="username" placeholder="Username" value="user"><br>
+        <input type="password" id="password" placeholder="Password" value="samiddin"><br>
+        <button onclick="deploy()">Deploy</button>
+    </div>
+    <br>
+    <!-- Go to Server Form -->
+    <div>
+        <input type="text" id="serverProductId" placeholder="Product ID"
+            value="293781b6-f96b-4449-871f-97311feae8a6"><br>
+        <button onclick="goToServer()">Go To Server</button>
+    </div>
+    <br>
+    <!-- Own Terminal Button -->
+    <div>
+        <button onclick="openOwnTerminal()">Own Terminal</button>
+    </div>
+
+    <script>
+        let socket = null;
+
+        const terminals = new Map();
+
+        let jwtToken = '';
+
+        document.addEventListener('keydown', function (event) {
+            if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'c') {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log("Inspector bloklandi!");
+            }
+        });
+
+
+        function initSocket() {
+            if (!socket) {
+                jwtToken = document.getElementById('token').value;
+                socket = io('ws://3.145.147.3:3004', { // 3.145.147.3 192.168.1.103,
+                    extraHeaders: {
+                        transports: ['websocket'],
+                        Authorization: `Bearer ${jwtToken}`,
+                        // customAccountId: sean.account_id,
+                    }
+                });
+
+                socket.on('connect', () => {
+                    console.log('Connected to server');
+                });
+
+                socket.on('disconnect', () => {
+                    console.log('Disconnected from server');
+                    terminals.forEach((terminal, sessionId) => {
+                        document.getElementById(`ter_${sessionId}`)?.remove();
+                    });
+                    terminals.clear();
+                    socket = null;
+                });
+
+                socket.on('open_terminal', ({ sessionId }) => {
+                    console.log('open_terminal sessionId: ', sessionId);
+                    openNewTerminal(sessionId);
+                });
+
+                socket.on('closed_terminal', ({ sessionId }) => {
+                    console.log('closed_teminal sessionId: ', sessionId);
+                    // const terminal = terminals.get(sessionId).term;
+                    document.getElementById(`ter_${sessionId}`)?.remove();
+                    terminals.delete(sessionId);
+                    if (terminals.size === 0) {
+                        socket.disconnect();
+                    }
+                });
+
+                socket.on('data', ({ sessionId, output }) => {
+                    const termObj = terminals.get(sessionId);
+                    terminals.get(sessionId)?.write(output);
+                });
+
+                socket.on('uploading', ({ sessionId, progress, eventName }) => {
+                    const termObj = terminals.get(sessionId);
+                    console.log(eventName + ' : ' + progress + '\n');
+                });
+
+                socket.on('installing', ({ sessionId, progress, eventName }) => {
+                    const termObj = terminals.get(sessionId);
+                    console.log(eventName + ' : ' + progress + '\n');
+                });
+
+
+                // socket.on('alert', () => {
+                //     console.log('Connected to server');
+                // });
+
+                // socket.on('error', () => {
+                //     console.log('Connected to server');
+                // });
+            }
+        }
+
+        function openNewTerminal(sessionId) {
+            // initSocket();
+
+            let terminalId = sessionId; // Unikal ID yaratamiz
+            let terminalWrapper = document.createElement('div');
+            terminalWrapper.className = "terminal-wrapper";
+            terminalWrapper.id = "ter_" + terminalId;
+
+            // Terminal sarlavhasi (title)
+            let terminalTitle = document.createElement('div');
+            terminalTitle.className = "terminal-title";
+            terminalTitle.innerHTML = `
+                <span>Terminal ${terminalId}</span>
+                <button onclick="toggleTerminal('${terminalId}')">⬇️</button>
+                <button onclick="closeTerminal('${terminalId}')">❌</button>
+            `;
+
+            // Terminal div
+            let terminalDiv = document.createElement('div');
+            terminalDiv.className = "terminal";
+            terminalDiv.style.display = "block";
+
+            terminalWrapper.appendChild(terminalTitle);
+            terminalWrapper.appendChild(terminalDiv);
+            document.body.appendChild(terminalWrapper);
+
+            let term = new Terminal({
+                convertEol: true,
+                cursorBlink: true,     // Blinking cursor
+                rows: 20,              // Qatorlar soni
+                cols: 80,              // Ustunlar soni
+                fontSize: 12,          // Font hajmi
+                theme: { background: "#000000" } // Qora fon
+            });
+
+            // // WebGL qo'shish (tezroq ishlashi uchun)
+            // const webglAddon = new WebglAddon();
+            // term.loadAddon(webglAddon);
+
+            term.open(terminalDiv);
+
+            terminals.set(sessionId, term);
+
+            term.onData(data => {
+                socket.emit('command', { sessionId, command: data });
+            });
+
+            term.onKey(({ key, domEvent }) => {
+                if (domEvent.ctrlKey && domEvent.key === 'c') {
+                    domEvent.preventDefault();
+                    domEvent.stopPropagation();
+
+                    let selectedText = term.getSelection();
+                    if (selectedText) {
+                        navigator.clipboard.writeText(selectedText)
+                            .then(() => console.log('Matn nusxalandi'))
+                            .catch(err => console.error('Nusxalashda xatolik:', err));
+                    }
+                }
+            });
+
+            term.onKey(({ key, domEvent }) => {
+                if (domEvent.ctrlKey && domEvent.key === 'v') {
+
+                    domEvent.preventDefault();
+                    domEvent.stopPropagation();
+                    navigator.clipboard.readText().then(text => {
+                        socket.emit('command', { sessionId, command: text });
+                    }).catch(err => console.error('Paste qilishda xatolik:', err));
+                }
+            })
+        }
+
+        // Terminalni ochish yoki yopish
+        function toggleTerminal(id) {
+            let terminalDiv = document.querySelector(`#ter_${id} .terminal`);
+            terminalDiv.style.display = terminalDiv.style.display === "none" ? "block" : "none";
+        }
+
+        function deploy() {
+            initSocket();
+            // const {
+            const productId = document.getElementById('productId').value;
+            const host = document.getElementById('host').value;
+            const port = +document.getElementById('port').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            // };
+            socket.emit('deploy_product', {
+                productId,
+                serverCredentials: {
+                    host,
+                    port,
+                    username,
+                    password
+                }
+            });
+        }
+
+        function goToServer() {
+            initSocket();
+            const data = {
+                productId: document.getElementById('serverProductId').value
+            };
+            socket.emit('ssh_connect', data);
+        }
+
+        function openOwnTerminal() {
+            initSocket();
+            socket.emit('open_own_terminal', null);
+        }
+
+        function closeTerminal(sessionId) {
+            socket.emit('close_terminal', { sessionId });
+        }
+    </script>
+</body>
+
+</html>

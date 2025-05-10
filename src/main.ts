@@ -5,6 +5,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './comman/filters/http-exception.filter';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -24,11 +25,15 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalFilters(new HttpExceptionFilter());
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
+
   app.useWebSocketAdapter(new IoAdapter(app));
 
-  const host = '0.0.0.0'; // 
-  // const host =  'localhost';// 
-
-  await app.listen(process.env.PORT ?? 3004, host);
+  await app.listen(process.env.PORT ?? 3004, process.env.HOST ?? '0.0.0.0');
 }
 void bootstrap();

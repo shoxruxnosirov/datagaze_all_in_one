@@ -1,180 +1,147 @@
 import {
+  BadRequestException,
   HttpException,
   HttpStatus,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
 
 import { Knex } from 'knex';
-import { IMessage, IProduct, IServer } from 'src/comman/types';
+import { Message, Server, ProductOne, Product, ProductList } from 'src/comman/types';
 
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
-import { ConnectDto } from 'src/modules/v1/ssh/dto/dtos';
+import { CreateProductDto } from 'src/modules/v1/product/dto/addProcuct.dto';
+import { ConnectDto } from 'src/modules/v1/product/dto/update.serverConnect.dto';
 
 @Injectable()
 export class ProductRepository {
-  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) { }
+  constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
-  async getAllProducts(): Promise<({ id: string, name: string, version: string, icon: string, installed: boolean })[]> {
-    return (
-      await this.knex('products')
-        .leftJoin('servers', 'products.serverId', 'servers.id')
-        .select(
-          'products.*',
-          this.knex.raw('servers.host as serverHost')
-        )
-    ).map(product => ({
+  async getAllProducts(): Promise<ProductList[]> {
+    const result = await this.knex<Product>('products').select('*');
+    return result.map((product) => ({
       id: product.id,
       name: product.name,
-      version: product.version,
       icon: product.icon,
+      version: product.serverVersion,
       installed: product.serverId ? true : false,
-    })
-    );
+
+      publisher: product.publisher,
+      agentVersion: product.agentVersion,
+      serverFileSize: product.serverFileSize,
+      agentFileSize: product.agentFileSize,
+    }));
   }
 
-  async getProductForDeploy(id: string): Promise<{ fileUrl: string }> {
-    return this.knex('products')
-      .where('products.id', id)
-      .select('products.fileUrl')  // Select only the urlPath column
-      .first();
+  async getProductForDeploy(
+    id: string,
+  ): Promise<{ serverFilePath: string; installScript?: string }> {
+    try {
+      const result = await this.knex<Product>('products')
+        .select(['serverFilePath', 'installScript'])
+        .where({ id })
+        .first();
+
+      if (!result) {
+        throw new NotFoundException(`Admin with id ${id} not found.`);
+      } else {
+        return result;
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error instanceof NotFoundException) {
+          throw error;
+        } else {
+          throw new BadRequestException(`Database error: ${error.message}`);
+        }
+      } else {
+        throw new BadRequestException(`Database error: ${error}`);
+      }
+    }
   }
 
-  async getProduct(
-    id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-    } & (
-      | {
-        supportOS: string;
-        requiredCpuCore: number;
-        requiredRam: number;
-        requiredStorage: number;
-        requiredNetwork: number;
-      }
-      | {
-        computerCounts: number;
-        firstUploadAt?: Date;
-        lastUploadAt?: Date;
-        serverHost: string;
-      }
-    )
-  > {
-    const product: IProduct & { serverhost: string | null } = await this.knex('products')
+  async getProduct(id: string): Promise<ProductOne> {
+    const product = (await this.knex<Product>('products')
       .leftJoin('servers', 'products.serverId', 'servers.id')
       .where('products.id', id)
-      .select(
-        'products.*',
-        this.knex.raw('servers.host as serverhost')
-      )
-      .first();
+      .select('products.*', this.knex.raw('servers.host as serverhost'))
+      .first()) as Product & { serverhost: string | null };
+
     if (product === undefined) {
       throw new HttpException('Product not found', HttpStatus.NOT_FOUND);
     } else {
-      const _product: { id: string, name: string, icon?: string, version: string, installed: boolean } = {
+      const _product = {
         id: product.id,
         name: product.name,
         icon: product.icon,
-        version: product.version,
+        version: product.serverVersion,
         installed: product.serverId ? true : false,
-      }
+      };
       if (product.serverhost !== null) {
         return {
           ..._product,
-          size: product.size,
-          company: product.company,
+          size: product.serverFileSize,
+          company: product.publisher,
           description: product.description,
           computerCounts: product.computerCount,
           firstUploadAt: product.firstUploadAt,
           lastUploadAt: product.lastUploadAt,
           serverHost: product.serverhost,
-        }
+        };
       } else {
         return {
           ..._product,
-          size: product.size,
-          company: product.company,
+          size: product.serverFileSize,
+          company: product.publisher,
           description: product.description,
           supportOS: product.supportOS,
           requiredCpuCore: product.requiredCpuCore,
           requiredRam: product.requiredRam,
           requiredStorage: product.requiredStorage,
           requiredNetwork: product.requiredNetwork,
-        }
+        };
       }
     }
   }
 
-  // async addServerAndUpdateProduct(serverData: ConnectDto, productId: string) {
-  //   return this.knex.transaction(async (trx) => {
-  //     // 1. `servers` jadvaliga yangi ma'lumot qo'shamiz
-  //     const [server] = await trx('servers')
-  //       .insert(serverData)
-  //       .returning(['id']); // ID ni qaytarib olamiz (PostgreSQL ishlatilsa)
-
-  //     // 2. `products` jadvalidagi `server_id` ni yangilaymiz
-  //     await trx('products')
-  //       .where({ id: productId })
-  //       .update({ serverId: server.id });
-
-  //     return server;
-  //   });
-  // }
-
   async addServerAndUpdateProduct(serverData: ConnectDto, productId: string): Promise<void> {
     const result = await this.knex
       .with('new_server', (qb) => {
-        qb.insert(serverData).into('servers').returning('*');
+        qb.insert(serverData).into('servers').returning(['id']);
       })
       .update({ serverId: this.knex.raw('(SELECT id FROM new_server)') })
-      .from('products')
+      .from<Product>('products')
       .where('id', productId)
-      .returning([
-        'products.*',
-        this.knex.raw('(SELECT id FROM new_server) AS serverId'),
-      ]);
+      .returning('*');
 
     if (!result.length) {
       throw new WsException('Product not found');
     }
-    // return {
-    //   product: {
-    //     id: result[0].id,
-    //     name: result[0].name,
-    //     icon: result[0].icon,
-    //     version: result[0].version,
-    //     installed: Boolean(result[0].serverId),
-    //     size: result[0].size,
-    //     company: result[0].company,
-    //     supportOS: result[0].supportOS,
-    //     requiredCpuCore: result[0].requiredCpuCore,
-    //     requiredRam: result[0].requiredRam,
-    //     requiredStorage: result[0].requiredStorage,
-    //     requiredNetwork: result[0].requiredNetwork,
-    //   },
-    //   server: {
-    //     id: result[0].serverId, // Yangi yaratilgan server ID
-    //   },
-    // };
+
+    // const [newServer] = await this.knex<Server>('servers')
+    //     .insert(serverData)
+    //     .returning(['id']);
+
+    // if (!newServer) {
+    //     throw new WsException('Server yaratilmadi');
+    // }
+
+    // const result = await this.knex<Product>('products')
+    //     .where('id', productId)
+    //     .update({ serverId: newServer.id })
+    //     .returning('*');
+
+    // if (!result.length) {
+    //     throw new WsException('Product not found');
+    // }
   }
 
-  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<IMessage> {
-    const result: IServer[] = await this.knex('servers')
+  async updateServerForProduct(productId: string, serverData: ConnectDto): Promise<Message> {
+    const result = await this.knex<Server>('servers')
       .update(serverData)
-      .where('id', function () {
-        this.select('serverId')
-          .from('products')
-          .where('id', productId);
-      })
+      .where('id', this.knex.select('serverId').from('products').where('id', productId))
       .returning('*');
 
     if (!result.length) {
@@ -187,11 +154,11 @@ export class ProductRepository {
     };
   }
 
-  async getServerCredentials(productId: string): Promise<IServer> {
-    const server = await this.knex('products')
-      .join('servers', 'products.serverId', 'servers.id')
+  async getServerCredentials(productId: string): Promise<Server> {
+    const server = await this.knex<Product>('products')
+      .join<Server>('servers', 'products.serverId', 'servers.id')
       .where('products.id', productId)
-      .select('servers.*')
+      .select<Server>('servers.*')
       .first();
 
     if (!server) {
@@ -201,33 +168,15 @@ export class ProductRepository {
     return server;
   }
 
-  async deleteServerForProduct(
-    id: string
-  ): Promise<
-    {
-      id: string;
-      name: string;
-      icon?: string;
-      version: string;
-      installed: boolean;
-      size: number;
-      company: string;
-      description?: string;
-      supportOS: string;
-      requiredCpuCore: number;
-      requiredRam: number;
-      requiredStorage: number;
-      requiredNetwork: number;
-    }
-  > {
+  async deleteServerForProduct(id: string): Promise<ProductOne> {
     const result = await this.knex
       .with('deleted_server', (qb) => {
         qb.from('servers')
           .where('id', this.knex('products').where('id', id).select('serverId'))
           .delete();
       })
-      .select('products.*')
-      .from('products')
+      .select<Product>('products.*')
+      .from<Product>('products')
       .where('products.id', id)
       .first();
 
@@ -239,15 +188,53 @@ export class ProductRepository {
       id: result.id,
       name: result.name,
       icon: result.icon,
-      version: result.version,
+      version: result.serverVersion,
       installed: false,
-      size: result.size,
-      company: result.company,
+      size: result.serverFileSize,
+      company: result.publisher,
       supportOS: result.supportOS,
       requiredCpuCore: result.requiredCpuCore,
       requiredRam: result.requiredRam,
       requiredStorage: result.requiredStorage,
       requiredNetwork: result.requiredNetwork,
     };
+  }
+
+  async deleteProduct(id: string): Promise<Message> {
+    const result = await this.knex<Product>('products').where({ id }).del().returning('*');
+
+    if (result.length === 0) {
+      throw new HttpException(
+        {
+          status: 'error',
+          message: 'Product not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      status: 'success',
+      message: 'remove product account successfull',
+    };
+  }
+
+  async create(productData: CreateProductDto): Promise<Message & { id: string }> {
+    try {
+      const [insertedId] = await this.knex<Product>('products').insert(productData).returning('id');
+
+      return {
+        message: 'Mahsulot muvaffaqiyatli qo‘shildi!',
+        status: 'success',
+        id: insertedId.id,
+      };
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new BadRequestException(`Xatolik: ${error.message}`);
+      } else {
+        console.log(error);
+        throw new Error('bu xatolik chiqmasa frontga bormaydi');
+      }
+    }
   }
 }

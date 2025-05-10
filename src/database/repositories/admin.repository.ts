@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Inject,
   Injectable,
   NotFoundException,
@@ -10,27 +12,25 @@ import {
 import { Knex } from 'knex';
 import * as bcrypt from 'bcryptjs';
 
-import { IAdmin, IMessage, IPayload } from 'src/comman/types';
+import { Admin, Admin2, Message, Payload, Role } from 'src/comman/types';
 import { KNEX_CONNECTION } from 'src/database/workWithDB/database.module';
-import {
-  CreateAdminDto,
-  LoginAdminDto,
-  UpdateAdminProfileDto,
-} from 'src/modules/v1/admins/dto/dtos';
+import { UpdateAdminProfileDto } from 'src/modules/v1/admin/dto/update';
+import { LoginAdminDto } from 'src/modules/v1/admin/dto/login';
+import { CreateAdminDto } from 'src/modules/v1/admin/dto/register';
 
 @Injectable()
 export class AdminRepository {
   constructor(@Inject(KNEX_CONNECTION) private readonly knex: Knex) {}
 
-  async loginAdmin(admin: LoginAdminDto): Promise<IAdmin | undefined> {
-    const data: IAdmin = await this.knex('admins')
+  async loginAdmin(admin: LoginAdminDto): Promise<Admin> {
+    const data: Admin | undefined = await this.knex<Admin>('admins')
       .select('*')
       .where({ username: admin.username })
       .first();
     if (!data) {
       throw new UnauthorizedException({
         status: 'error',
-        message: 'Invalid username or password no data',
+        message: 'Invalid username or password incorrect',
       });
     }
     const isPasswordValid = await this.comparePassword(admin.password, data.password);
@@ -39,54 +39,120 @@ export class AdminRepository {
       // Agar parol xato bo'lsa, unauthorized xatolik tashlaymiz
       throw new UnauthorizedException({
         status: 'error',
-        message: 'Invalid username or password password incorrect',
+        message: 'Invalid username or password incorrect',
       });
     }
 
     return data;
   }
 
-  async createAdmin(admin: CreateAdminDto): Promise<IAdmin> {
+  async createAdmin(admin: CreateAdminDto): Promise<Admin> {
     try {
       const password = await this.hashPassword(admin.password);
       admin.password = password;
-      const result = await this.knex<IAdmin>('admins').insert(admin).returning('*');
+      const result = await this.knex<Admin>('admins').insert(admin).returning('*');
 
       if (result.length === 0) {
         throw new BadRequestException('Unexpected error: No result returned after insert.');
       }
 
       return result[0];
-    } catch (error) {
-      if (error.code === '23505') {
-        // '23505' - unique violation PostgreSQL kod
-        throw new ConflictException({
-          status: 'error',
-          message: 'Username already taken',
-        });
+    } catch (error: unknown) {
+      if (error instanceof Error && 'code' in error) {
+        const pgError = error as Error & { code: string };
+
+        if (pgError.code === '23505') {
+          throw new ConflictException({
+            status: 'error',
+            message: 'Username already taken',
+          });
+        }
       }
 
-      throw new BadRequestException(`Database error: ${error.message}`);
+      if (error instanceof Error) {
+        throw new BadRequestException(`Database error: ${error.message}`);
+      } else {
+        throw error;
+      }
     }
   }
 
-  async updatePasswordBySuperadmin(data: {
-    userId: string;
-    newPassword: string;
-  }): Promise<IMessage> {
-    const password = await this.hashPassword(data.newPassword);
-    await this.knex('admins').where({ id: data.userId }).update({ password }).returning('*');
-    return {
-      status: 'success',
-      message: `Password updated successfully. new password: "${data.newPassword}"`,
-    };
+  async getAllAdmins(): Promise<Admin2[]> {
+    try {
+      const result = await this.knex<Admin>('admins')
+        .select(['id', 'name', 'username', 'email', 'createdAt'])
+        .where({ role: Role.ADMIN });
+
+      return result; // Type assertion ishlatish;
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new BadRequestException(`Database error: ${error.message}`);
+      } else {
+        throw error;
+      }
+    }
   }
+
+  async getOneAdmin(id: string): Promise<Admin2> {
+    try {
+      const result = await this.knex<Admin>('admins')
+        .select(['id', 'name', 'username', 'email', 'createdAt'])
+        .where({ id })
+        .first();
+
+      if (!result) {
+        throw new NotFoundException(`Admin with id ${id} not found.`);
+      } else {
+        return result;
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (error instanceof NotFoundException) {
+          throw error;
+        } else {
+          throw new BadRequestException(`Database error: ${error.message}`);
+        }
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  // async updatePasswordBySuperadmin(data: {
+  //   userId: string;
+  //   newPassword: string;
+  // }): Promise<IMessage> {
+  //   const result = await this.knex('admins')
+  //     .where({ id: data.userId })
+  //     .update({
+  //       password: await this.hashPassword(data.newPassword),
+  //     })
+  //     .whereNot({ role: 'superadmin' })
+  //     .returning(['id', 'role']);
+
+  //   if (!result.length) {
+  //     throw new HttpException(
+  //       {
+  //         status: 'error',
+  //         message: 'Siz superadmin parolini userId orqali yangilay olmaysan'
+  //       },
+  //       HttpStatus.FORBIDDEN
+  //     );
+  //   }
+
+  //   return {
+  //     status: 'success',
+  //     message: `Password updated successfully  new password: "${data.newPassword}"`,
+  //   };
+  // }
 
   async updatePasswordByAdmin(
     data: { oldPassword: string; newPassword: string },
-    admin: IPayload,
-  ): Promise<IMessage> {
-    const existingAdmin: IAdmin = await this.knex('admins').where({ id: admin.id }).first();
+    admin: Payload,
+  ): Promise<Message> {
+    const existingAdmin: Admin | undefined = await this.knex<Admin>('admins')
+      .where({ id: admin.id })
+      .first();
 
     if (!existingAdmin) {
       throw new NotFoundException({
@@ -114,27 +180,41 @@ export class AdminRepository {
     };
   }
 
-  async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<IMessage> {
-    try {
-      const result = await this.knex('admins').where({ id }).update(updates).returning('*');
-
-      if (result.length === 0) {
-        throw new BadRequestException('Foydalanuvchi topilmadi');
-      }
-
-      // return result[0];
-      return {
-        status: 'success',
-        message: 'Profile updated successfully',
-      };
-    } catch (error) {
-      throw new BadRequestException(`Profilni yangilashda xatolik: ${error.message}`);
+  async updateProfile(id: string, updates: UpdateAdminProfileDto): Promise<Message> {
+    if (updates.password) {
+      updates.password = await this.hashPassword(updates.password);
     }
+    const result = await this.knex('admins').where({ id }).update(updates).returning('*');
+
+    if (result.length === 0) {
+      // throw new BadRequestException('Foydalanuvchi topilmadi');
+      throw new NotFoundException(`Foydalanuvchi topilmadi`);
+    }
+
+    return {
+      status: 'success',
+      message: 'Profile updated successfully',
+    };
   }
 
-  // async delete(id: number) {
-  //   return this.knex('Admins').where({ id }).del().returning('*');
-  // }
+  async deleteAdminBySuperadmin(id: string): Promise<Message> {
+    const result = await this.knex('admins').where({ id }).del().returning('*');
+
+    if (result.length === 0) {
+      throw new HttpException(
+        {
+          status: 'error',
+          message: 'Admin not found',
+        },
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
+    return {
+      status: 'success',
+      message: 'remove admin account successfull',
+    };
+  }
 
   private async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
